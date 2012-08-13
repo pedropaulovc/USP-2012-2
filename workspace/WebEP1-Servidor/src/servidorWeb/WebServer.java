@@ -9,7 +9,7 @@ public final class WebServer {
 	
 	public static void main(String argv[]) throws Exception {
 		int porta = 8080; // Porta que o servidor ouvirá
-		String diretorioBase = "/home/pedropaulovc"; // diretório onde estarão os arquivos
+		String diretorioBase = "/home/bcc/pedrovc/www"; // diretório onde estarão os arquivos
 
 		System.out.println("Servidor Web iniciado." + CRLF);
 		

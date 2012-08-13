@@ -14,7 +14,9 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 final class Requisicao {
 	String diretorioBase;
@@ -26,8 +28,8 @@ final class Requisicao {
 
 	public Requisicao(Socket socket, String diretorioBase) throws Exception {
 		this.socket = socket;
-		this.input = new BufferedReader(new InputStreamReader(
-				socket.getInputStream()));
+		this.input = new BufferedReader(new InputStreamReader(socket
+				.getInputStream()));
 		this.output = new DataOutputStream(socket.getOutputStream());
 		this.diretorioBase = diretorioBase;
 		this.cabecalhoSaida = new CabecalhoSaida(output);
@@ -36,6 +38,7 @@ final class Requisicao {
 
 	public void processa() throws Exception {
 		cabecalhoEntrada.ler();
+		processarCookies();
 
 		if (cabecalhoEntrada.obterUrl() == null) {
 			exibirErro(400, "Não há requisicao a ser processada");
@@ -47,14 +50,26 @@ final class Requisicao {
 
 		File req = new File(requisicao);
 
-		if (req.exists()){
+		if (req.exists()) {
 			if (!necessitaAutenticacao(req.getAbsolutePath())
 					|| autenticar(req.getAbsolutePath()))
 				exibirResultado(requisicao, req);
 		} else
-				exibirErro(404, requisicao + " não encontrado");
+			exibirErro(404, requisicao + " não encontrado");
 
 		encerrar();
+	}
+
+	private void processarCookies() {
+		Cookie cookie = new Cookie(cabecalhoEntrada.obterCampo("Cookie"));
+		String cookieSaida = "Set-Cookie: qtd_visitas=";
+		String qtdVisitas = cookie.obterCampo("qtd_visitas");
+		
+		if(qtdVisitas == null)
+			qtdVisitas = "0";
+		
+		cookieSaida += (Integer.parseInt(qtdVisitas) + 1);
+		cabecalhoSaida.definirLinha(cookieSaida);
 	}
 
 	private boolean autenticar(String diretorio) throws IOException {
@@ -84,25 +99,31 @@ final class Requisicao {
 	}
 
 	private void exibirResultado(String requisicao, File req) throws Exception {
-		cabecalhoSaida.definirStatus(200);
 		if (req.isDirectory())
-			cabecalhoSaida.definirLinha("Content-Type: text/plain");
+			exibirDiretorio(requisicao, req);
 		else
-			cabecalhoSaida.definirLinha("Content-Type: "
-					+ contentType(requisicao));
+			enviarArquivo(requisicao, req);
+	}
 
+	private void exibirDiretorio(String requisicao, File req)
+			throws IOException {
+		cabecalhoSaida.definirStatus(200);
+		cabecalhoSaida.definirLinha("Content-Type: text/plain");
 		cabecalhoSaida.enviar();
 
-		if (req.isDirectory()) {
-			output.writeBytes("Listando diretório " + requisicao + CRLF + CRLF);
-			String[] arquivos = req.list();
-			if (arquivos != null)
-				for (String arquivo : arquivos)
-					output.writeBytes(arquivo + CRLF);
-		} else if (req.isFile()) {
-			sendBytes(new FileInputStream(req), output);
-		}
+		output.writeBytes("Listando diretório " + requisicao + CRLF + CRLF);
+		String[] arquivos = req.list();
+		if (arquivos != null)
+			for (String arquivo : arquivos)
+				output.writeBytes(arquivo + CRLF);
+	}
 
+	private void enviarArquivo(String requisicao, File req) throws Exception{
+		cabecalhoSaida.definirStatus(200);
+		cabecalhoSaida.definirLinha("Content-Type: " + contentType(requisicao));
+		cabecalhoSaida.enviar();
+		
+		sendBytes(new FileInputStream(req), output);
 	}
 
 	private boolean necessitaAutenticacao(String diretorio) {
@@ -111,8 +132,8 @@ final class Requisicao {
 	}
 
 	private void exibirErro(int codigo, String mensagem) throws IOException {
-		cabecalhoSaida.definirStatus(codigo)
-				.definirLinha("Content-Type: text/plain").enviar();
+		cabecalhoSaida.definirStatus(codigo).definirLinha(
+				"Content-Type: text/plain").enviar();
 		output.writeBytes(mensagem + CRLF);
 	}
 
@@ -141,7 +162,7 @@ final class Requisicao {
 		if (fileName.endsWith(".gif")) {
 			return "image/gif";
 		}
-		if (fileName.endsWith(".txt")) {
+		if (fileName.endsWith(".txt") ||  fileName.endsWith(".css")) {
 			return "text/plain";
 		}
 		if (fileName.endsWith(".pdf")) {
