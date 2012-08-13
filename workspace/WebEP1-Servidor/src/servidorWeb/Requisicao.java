@@ -1,6 +1,10 @@
 package servidorWeb;
 
+import static servidorWeb.CabecalhoSaida.CRLF;
+import static servidorWeb.WebServer.arquivoAutorizados;
+
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,16 +12,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.StringTokenizer;
-
-import static servidorWeb.Cabecalho.CRLF;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 final class Requisicao {
 	String diretorioBase;
 	Socket socket;
 	private BufferedReader input;
 	private DataOutputStream output;
-	private Cabecalho cabecalho;
+	private CabecalhoSaida cabecalhoSaida;
+	private CabecalhoEntrada cabecalhoEntrada;
 
 	public Requisicao(Socket socket, String diretorioBase) throws Exception {
 		this.socket = socket;
@@ -25,43 +30,70 @@ final class Requisicao {
 				socket.getInputStream()));
 		this.output = new DataOutputStream(socket.getOutputStream());
 		this.diretorioBase = diretorioBase;
-		this.cabecalho = new Cabecalho(output);
+		this.cabecalhoSaida = new CabecalhoSaida(output);
+		this.cabecalhoEntrada = new CabecalhoEntrada(input);
 	}
 
 	public void processa() throws Exception {
-		String requestLine = input.readLine();
-		if (requestLine == null) {
+		cabecalhoEntrada.ler();
+
+		if (cabecalhoEntrada.obterUrl() == null) {
 			exibirErro(400, "Não há requisicao a ser processada");
 			encerrar();
 			return;
 		}
 
-		// Extract the filename from the request line.
-		// TODO: Tratar entradas malformadas
-		StringTokenizer tokens = new StringTokenizer(requestLine);
-
-		tokens.nextToken(); // GET, POST...
-		String requisicao = diretorioBase + tokens.nextToken();
+		String requisicao = diretorioBase + cabecalhoEntrada.obterUrl();
 
 		File req = new File(requisicao);
 
-		if (req.exists())
-			exibirResultado(requisicao, req);
-		else 
-			exibirErro(404, requisicao + " não encontrado");
-		
+		if (req.exists()){
+			if (!necessitaAutenticacao(req.getAbsolutePath())
+					|| autenticar(req.getAbsolutePath()))
+				exibirResultado(requisicao, req);
+		} else
+				exibirErro(404, requisicao + " não encontrado");
+
 		encerrar();
 	}
 
+	private boolean autenticar(String diretorio) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(
+				new DataInputStream(new FileInputStream(diretorio + "/"
+						+ arquivoAutorizados))));
+
+		String linha;
+		List<String> autorizados = new ArrayList<String>();
+		while ((linha = br.readLine()) != null)
+			autorizados.add("Basic " + linha);
+		br.close();
+
+		String credenciais = cabecalhoEntrada.obterCampo("Authorization");
+		if (credenciais == null || !autorizados.contains(credenciais)) {
+			cabecalhoSaida
+					.definirStatus(401)
+					.definirLinha("Content-Type: text/plain")
+					.definirLinha(
+							"WWW-Authenticate: Basic realm=\"Forneca credenciais para continuar\"")
+					.enviar();
+			output.writeBytes("Área restrita do site.");
+			return false;
+		}
+
+		return true;
+	}
+
 	private void exibirResultado(String requisicao, File req) throws Exception {
-		cabecalho.definirStatus(200);
+		cabecalhoSaida.definirStatus(200);
 		if (req.isDirectory())
-			cabecalho.definirLinha("Content-Type: text/plain");
+			cabecalhoSaida.definirLinha("Content-Type: text/plain");
 		else
-			cabecalho.definirLinha("Content-Type: " + contentType(requisicao));
-		cabecalho.enviar();
-		
-		if(req.isDirectory()){
+			cabecalhoSaida.definirLinha("Content-Type: "
+					+ contentType(requisicao));
+
+		cabecalhoSaida.enviar();
+
+		if (req.isDirectory()) {
 			output.writeBytes("Listando diretório " + requisicao + CRLF + CRLF);
 			String[] arquivos = req.list();
 			if (arquivos != null)
@@ -73,9 +105,14 @@ final class Requisicao {
 
 	}
 
+	private boolean necessitaAutenticacao(String diretorio) {
+		File autorizados = new File(diretorio + "/" + arquivoAutorizados);
+		return autorizados.exists();
+	}
+
 	private void exibirErro(int codigo, String mensagem) throws IOException {
-		cabecalho.definirStatus(codigo).definirLinha("Content-Type: text/plain")
-				.enviar();
+		cabecalhoSaida.definirStatus(codigo)
+				.definirLinha("Content-Type: text/plain").enviar();
 		output.writeBytes(mensagem + CRLF);
 	}
 

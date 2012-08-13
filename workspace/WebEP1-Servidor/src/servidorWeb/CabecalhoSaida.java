@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Cabecalho {
+import static servidorWeb.WebServer.nome;
+
+public class CabecalhoSaida {
 	public static final String CRLF = "\r\n";
 	private int status = 500;
 	private List<String> linhas = new ArrayList<String>();
@@ -58,25 +60,26 @@ public class Cabecalho {
 		}
 	};
 	
-	public Cabecalho(DataOutputStream output){
+	public CabecalhoSaida(DataOutputStream output){
 		this.output = output;
 	}
 
-	public Cabecalho definirStatus(int status) {
+	public CabecalhoSaida definirStatus(int status) {
 		this.status = status;
 		return this;
 	}
 
-	public Cabecalho definirLinha(String linha) {
+	public CabecalhoSaida definirLinha(String linha) {
 		linhas.add(linha);
 		return this;
 	}
 
-	public Cabecalho enviar() throws IOException {
+	public CabecalhoSaida enviar() throws IOException {
 		output.writeBytes("HTTP/1.1 " + status + " " + codigos.get(status) + CRLF);
+		output.writeBytes("Server: " + nome + CRLF);
 		for (String linha : linhas)
-			output.writeBytes(linha);
-		output.writeBytes(CRLF + CRLF);
+			output.writeBytes(linha + CRLF);
+		output.writeBytes(CRLF);
 		return this;
 	}
 }
