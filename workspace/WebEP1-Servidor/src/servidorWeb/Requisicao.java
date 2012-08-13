@@ -12,10 +12,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-final class Requisicao {
+final class Requisicao extends Thread{
 	String diretorioBase;
 	Socket socket;
 	private BufferedReader input;
@@ -25,14 +28,22 @@ final class Requisicao {
 
 	public Requisicao(Socket socket, String diretorioBase) throws Exception {
 		this.socket = socket;
-		this.input = new BufferedReader(new InputStreamReader(socket
-				.getInputStream()));
+		this.input = new BufferedReader(new InputStreamReader(
+				socket.getInputStream()));
 		this.output = new DataOutputStream(socket.getOutputStream());
 		this.diretorioBase = diretorioBase;
 		this.cabecalhoSaida = new CabecalhoSaida(output);
 		this.cabecalhoEntrada = new CabecalhoEntrada(input);
 	}
 
+	public void run(){
+		try {
+			processa();
+		} catch (Exception e) {
+			System.err.println("Excecao ocorrida: " + e);
+		}
+	}
+	
 	public void processa() throws Exception {
 		cabecalhoEntrada.ler();
 		processarCookies();
@@ -107,9 +118,23 @@ final class Requisicao {
 			enviarArquivo(requisicao, req);
 	}
 
-	private void interpretarScript(String requisicao, File req) {
-		// TODO Auto-generated method stub
+	private void interpretarScript(String requisicao, File req) throws IOException {
+		cabecalhoSaida.definirStatus(200);
+		cabecalhoSaida.definirLinha("Content-Type: text/html");
+		cabecalhoSaida.enviar();
 		
+		FileInputStream stream = new FileInputStream(req);
+		  try {
+		    FileChannel fc = stream.getChannel();
+		    MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
+		    /* Instead of using default, pass in a decoder. */
+		    String arquivo = Charset.defaultCharset().decode(bb).toString();
+		    
+		    output.writeBytes(Bfhtml.interpretar(arquivo));
+		  }
+		  finally {
+		    stream.close();
+		  }
 	}
 
 	private void exibirDiretorio(String requisicao, File req)
@@ -139,12 +164,12 @@ final class Requisicao {
 	}
 
 	private void exibirErro(int codigo, String mensagem) throws IOException {
-		cabecalhoSaida.definirStatus(codigo).definirLinha(
-				"Content-Type: text/plain").enviar();
+		cabecalhoSaida.definirStatus(codigo)
+				.definirLinha("Content-Type: text/plain").enviar();
 		output.writeBytes(mensagem + CRLF);
 	}
 
-	private void encerrar() throws IOException {
+	public void encerrar() throws IOException {
 		output.close();
 		input.close();
 		socket.close();

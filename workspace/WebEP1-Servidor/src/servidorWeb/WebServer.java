@@ -1,4 +1,5 @@
 package servidorWeb;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -9,7 +10,7 @@ public final class WebServer {
 	
 	public static void main(String argv[]) throws Exception {
 		int porta = 8080; // Porta que o servidor ouvirá
-		String diretorioBase = "/home/bcc/pedrovc/www"; // diretório onde estarão os arquivos
+		String diretorioBase = System.getProperty("user.dir") + "/src/www"; // diretório onde estarão os arquivos
 
 		System.out.println("Servidor Web iniciado." + CRLF);
 		
@@ -19,8 +20,13 @@ public final class WebServer {
 			Socket conexaoSocket = socket.accept(); // Escuta o socket
 
 			Requisicao request = new Requisicao(conexaoSocket, diretorioBase);
-
-			request.processa();
+			
+			try{
+				request.processa();
+			} catch(IOException e){
+				request.encerrar();
+				System.err.println("Broken pipe");
+			}
 		}
 
 	}

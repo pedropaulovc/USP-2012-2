@@ -3,9 +3,8 @@ package servidorWeb;
 // A Java Brainfuck Interpreter
 
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.io.InputStream;
+import java.io.PrintStream;
 
 
 
@@ -15,7 +14,7 @@ import java.io.InputStream;
  *  @author Sven Stucki
  */
 
-public class BrainfuckInterpreter {
+public class InterpretadorBf {
 
 
     /** Output of the brainfuck programm goes here, default = System.out **/
@@ -41,15 +40,15 @@ public class BrainfuckInterpreter {
 
 
     /** Standard constructor, sets everything to default **/
-    public BrainfuckInterpreter() {
+    public InterpretadorBf() {
         init( 1000 );
     }
     /** With this constructor you can specify the number of memory cells to provide, I/O uses default **/
-    public BrainfuckInterpreter( int cnt ) {
+    public InterpretadorBf( int cnt ) {
         init( cnt );
     }
     /** This constructor lets you specify the number of memory cells, and the I/O Streams **/
-    public BrainfuckInterpreter( int cnt, PrintStream p, InputStream i ) {
+    public InterpretadorBf( int cnt, PrintStream p, InputStream i ) {
         ps = p;
         is = i;
         init( cnt );
@@ -371,7 +370,7 @@ public class BrainfuckInterpreter {
         if( args.length > 1 && args[1].compareTo("-d") == 0 )
             debug = true;
         
-        BrainfuckInterpreter bfi = new BrainfuckInterpreter();
+        InterpretadorBf bfi = new InterpretadorBf();
         bfi.setProgram( args[0] );
         bfi.start(0, debug);
         

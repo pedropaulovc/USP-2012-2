@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta charset="iso-8859-1">
+		<title>Teste do interpretador</title>
+		<!--[if IE]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+		<h1>Arquivo HTML com codigo interpretado</h1>
+		<p>Este trecho e codigo HTML estatico:</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In rhoncus nulla a lorem iaculis quis convallis erat fringilla. Aliquam id lacus augue. Vestibulum fringilla convallis blandit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Quisque pulvinar sem ut lorem lobortis et cursus velit vulputate. Ut cursus erat eget libero tempor consequat. Vivamus eu eros non purus blandit feugiat. Integer at eros eget lacus rhoncus feugiat eget ut felis. Mauris commodo tellus ac nulla laoreet non pellentesque urna tempor. In sed diam et ipsum cursus porta vitae vitae elit. Duis nisl erat, venenatis eu tempus quis, tempor nec dolor.</p>
+		<p>Codigo fonte Brainfuck a ser interpretado: </p>
+		<pre>
+Fonte: http://rosettacode.org/wiki/FizzBuzz
+
+FizzBuzz:
+Para cada numero i de 1 a 100 faca:
+	se i % 3 == 0
+		escreva Fizz
+	se i % 5 == 0
+		escreva Buzz
+	se i % 15 == 0
+		escreva FizzBuzz
+	senao
+		escreva i
+ 
+Memory:
+  Zero
+  Zero
+  Counter 1
+  Counter 2
+ 
+  Zero
+  ASCIIDigit 3
+  ASCIIDigit 2
+  ASCIIDigit 1
+ 
+  Zero
+  Digit 3
+  Digit 2    
+  Digit 1    
+ 
+  CopyPlace
+  Mod 3
+  Mod 5
+  PrintNumber
+ 
+  TmpFlag
+ 
+Counters for the loop
+++++++++++[>++++++++++[>+>+<<-]<-]
+ 
+Number representation in ASCII
+>>>>
+++++++++ ++++++++ ++++++++ ++++++++ ++++++++ ++++++++ [>+>+>+<<<-]
+<<<<
+ 
+>>
+[
+    Do hundret times:
+ 
+    Decrement counter
+    ->->
+ 
+    Increment Number
+    > >>+> 
+        > >>+>
+        <<<<
+    <<<<
+ 
+    Check for Overflow
+    ++++++++++
+    >>> >>>>
+    >++++++++++<
+    [-<<< <<<<->>>> >>> >-<]
+    ++++++++++ 
+    <<< <<<<
+ 
+    Restore the digit
+    [->>>> >>>-<<< <<<<]
+    >>>> [-]+ >>>>[<<<< - >>>>[-]]<<<< <<<< 
+ 
+    If there is an overflow
+    >>>>[
+        <<<<
+ 
+        >>>----------> >>>----------<+<< <<+<<
+ 
+        Check for Overflow
+        ++++++++++
+        >> >>>>
+        >>++++++++++<<
+        [-<< <<<<->>>> >> >>-<<]
+        ++++++++++ 
+        << <<<<
+ 
+        Restore the digit
+        [->>>> >>-<< <<<<]
+        >>>> [-]+ >>>>[<<<< - >>>>[-]]<<<< <<<< 
+ 
+        If there (again) is an overflow
+        >>>>[
+            <<<<
+            >>---------->> >>----------<+< <<<+<
+ 
+            >>>>
+            [-]
+        ]<<<<
+ 
+        >>>>
+        [-]
+    ]<<<<
+ 
+    >>>> >>>> 
+ 
+    Set if to print the number
+    >>>[-]+<<<
+ 
+    Handle the Mod 3 counter
+    [-]+++
+ 
+    >>>>[-]+<<<<
+    >+[-<->]+++<
+    [->->>>[-]<<<<]
+    >>>>[
+        <[-]>
+ 
+        [-]
+        Print "Fizz"
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++.
+ 
+        ++++++++ ++++++++ ++++++++ ++++++++
+        +++.
+ 
+        ++++++++ ++++++++ +..
+ 
+        [-]
+        <<<--->>>
+    ]<<<<
+ 
+    Handle the Mod 5 counter
+    [-]+++++
+ 
+    >>>>[-]+<<<<
+    >>+[-<<->>]+++++<<
+    [->>->>[-]<<<<]
+    >>>>[
+        <[-]>
+ 
+        [-]
+        Print "Buzz"
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++.
+ 
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ +++.
+ 
+        +++++..
+ 
+        [-]
+        <<----->>
+    ]<<<<
+ 
+    Check if to print the number (Leading zeros)
+    >>>[
+        <<< <<<< <<<<
+        >.>.>.<<<
+        >>> >>>> >>>>
+        [-]
+    ]<<<
+ 
+    <<<< <<<<
+ 
+    Print New Line
+    <<<<[-]++++ ++++ ++++ +.---.[-]>>
+]
+<<
+</pre>
+
+<hline />
+
+<p>Saida do programa:</p>
+		<pre><%
+FizzBuzz
+ 
+Memory:
+  Zero
+  Zero
+  Counter 1
+  Counter 2
+ 
+  Zero
+  ASCIIDigit 3
+  ASCIIDigit 2
+  ASCIIDigit 1
+ 
+  Zero
+  Digit 3
+  Digit 2    
+  Digit 1    
+ 
+  CopyPlace
+  Mod 3
+  Mod 5
+  PrintNumber
+ 
+  TmpFlag
+ 
+Counters for the loop
+++++++++++[>++++++++++[>+>+<<-]<-]
+ 
+Number representation in ASCII
+>>>>
+++++++++ ++++++++ ++++++++ ++++++++ ++++++++ ++++++++ [>+>+>+<<<-]
+<<<<
+ 
+>>
+[
+    Do hundret times:
+ 
+    Decrement counter
+    ->->
+ 
+    Increment Number
+    > >>+> 
+        > >>+>
+        <<<<
+    <<<<
+ 
+    Check for Overflow
+    ++++++++++
+    >>> >>>>
+    >++++++++++<
+    [-<<< <<<<->>>> >>> >-<]
+    ++++++++++ 
+    <<< <<<<
+ 
+    Restore the digit
+    [->>>> >>>-<<< <<<<]
+    >>>> [-]+ >>>>[<<<< - >>>>[-]]<<<< <<<< 
+ 
+    If there is an overflow
+    >>>>[
+        <<<<
+ 
+        >>>----------> >>>----------<+<< <<+<<
+ 
+        Check for Overflow
+        ++++++++++
+        >> >>>>
+        >>++++++++++<<
+        [-<< <<<<->>>> >> >>-<<]
+        ++++++++++ 
+        << <<<<
+ 
+        Restore the digit
+        [->>>> >>-<< <<<<]
+        >>>> [-]+ >>>>[<<<< - >>>>[-]]<<<< <<<< 
+ 
+        If there (again) is an overflow
+        >>>>[
+            <<<<
+            >>---------->> >>----------<+< <<<+<
+ 
+            >>>>
+            [-]
+        ]<<<<
+ 
+        >>>>
+        [-]
+    ]<<<<
+ 
+    >>>> >>>> 
+ 
+    Set if to print the number
+    >>>[-]+<<<
+ 
+    Handle the Mod 3 counter
+    [-]+++
+ 
+    >>>>[-]+<<<<
+    >+[-<->]+++<
+    [->->>>[-]<<<<]
+    >>>>[
+        <[-]>
+ 
+        [-]
+        Print "Fizz"
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++.
+ 
+        ++++++++ ++++++++ ++++++++ ++++++++
+        +++.
+ 
+        ++++++++ ++++++++ +..
+ 
+        [-]
+        <<<--->>>
+    ]<<<<
+ 
+    Handle the Mod 5 counter
+    [-]+++++
+ 
+    >>>>[-]+<<<<
+    >>+[-<<->>]+++++<<
+    [->>->>[-]<<<<]
+    >>>>[
+        <[-]>
+ 
+        [-]
+        Print "Buzz"
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++.
+ 
+        ++++++++ ++++++++ ++++++++ ++++++++
+        ++++++++ ++++++++ +++.
+ 
+        +++++..
+ 
+        [-]
+        <<----->>
+    ]<<<<
+ 
+    Check if to print the number (Leading zeros)
+    >>>[
+        <<< <<<< <<<<
+        >.>.>.<<<
+        >>> >>>> >>>>
+        [-]
+    ]<<<
+ 
+    <<<< <<<<
+ 
+    Print New Line
+    <<<<[-]++++ ++++ ++++ +.---.[-]>>
+]
+<<
+%></pre>
+
+		<p>Este trecho e codigo HTML estatico:</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In rhoncus nulla a lorem iaculis quis convallis erat fringilla. Aliquam id lacus augue. Vestibulum fringilla convallis blandit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Quisque pulvinar sem ut lorem lobortis et cursus velit vulputate. Ut cursus erat eget libero tempor consequat. Vivamus eu eros non purus blandit feugiat. Integer at eros eget lacus rhoncus feugiat eget ut felis. Mauris commodo tellus ac nulla laoreet non pellentesque urna tempor. In sed diam et ipsum cursus porta vitae vitae elit. Duis nisl erat, venenatis eu tempus quis, tempor nec dolor.</p>
+
+	</body>
+</html>

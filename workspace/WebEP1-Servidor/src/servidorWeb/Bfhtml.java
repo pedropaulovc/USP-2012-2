@@ -1,6 +1,5 @@
 package servidorWeb;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -8,7 +7,7 @@ public class Bfhtml {
 	public static String interpretar(String entrada) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
-		BrainfuckInterpreter bfi = new BrainfuckInterpreter(1024, ps, null);
+		InterpretadorBf ibf = new InterpretadorBf(1024, ps, null);
 		
 		StringBuffer saida = new StringBuffer();
 		int inicio = 0;
@@ -23,9 +22,9 @@ public class Bfhtml {
 			fim = entrada.indexOf("%>", inicio);
 			String codigo = entrada.substring(inicio, fim);
 
-			bfi.init(1024);
-			bfi.setProgram(codigo);
-			bfi.start();
+			ibf.init(1024);
+			ibf.setProgram(codigo);
+			ibf.start();
 			saida.append(baos.toString());
 
 			inicio = fim + 2;
