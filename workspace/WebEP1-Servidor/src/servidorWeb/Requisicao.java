@@ -13,10 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 final class Requisicao {
 	String diretorioBase;
@@ -46,6 +43,10 @@ final class Requisicao {
 			return;
 		}
 
+		System.out.println(cabecalhoEntrada.obterComando() + " "
+				+ cabecalhoEntrada.obterUrl() + " "
+				+ cabecalhoEntrada.obterProtocolo());
+
 		String requisicao = diretorioBase + cabecalhoEntrada.obterUrl();
 
 		File req = new File(requisicao);
@@ -62,14 +63,13 @@ final class Requisicao {
 
 	private void processarCookies() {
 		Cookie cookie = new Cookie(cabecalhoEntrada.obterCampo("Cookie"));
-		String cookieSaida = "Set-Cookie: qtd_visitas=";
 		String qtdVisitas = cookie.obterCampo("qtd_visitas");
-		
-		if(qtdVisitas == null)
+
+		if (qtdVisitas == null)
 			qtdVisitas = "0";
-		
-		cookieSaida += (Integer.parseInt(qtdVisitas) + 1);
-		cabecalhoSaida.definirLinha(cookieSaida);
+
+		cabecalhoSaida.definirLinha("Set-Cookie: qtd_visitas="
+				+ (Integer.parseInt(qtdVisitas) + 1));
 	}
 
 	private boolean autenticar(String diretorio) throws IOException {
@@ -101,8 +101,15 @@ final class Requisicao {
 	private void exibirResultado(String requisicao, File req) throws Exception {
 		if (req.isDirectory())
 			exibirDiretorio(requisicao, req);
+		else if (requisicao.endsWith(".bfhtml"))
+			interpretarScript(requisicao, req);
 		else
 			enviarArquivo(requisicao, req);
+	}
+
+	private void interpretarScript(String requisicao, File req) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	private void exibirDiretorio(String requisicao, File req)
@@ -118,11 +125,11 @@ final class Requisicao {
 				output.writeBytes(arquivo + CRLF);
 	}
 
-	private void enviarArquivo(String requisicao, File req) throws Exception{
+	private void enviarArquivo(String requisicao, File req) throws Exception {
 		cabecalhoSaida.definirStatus(200);
 		cabecalhoSaida.definirLinha("Content-Type: " + contentType(requisicao));
 		cabecalhoSaida.enviar();
-		
+
 		sendBytes(new FileInputStream(req), output);
 	}
 
@@ -162,7 +169,7 @@ final class Requisicao {
 		if (fileName.endsWith(".gif")) {
 			return "image/gif";
 		}
-		if (fileName.endsWith(".txt") ||  fileName.endsWith(".css")) {
+		if (fileName.endsWith(".txt") || fileName.endsWith(".css")) {
 			return "text/plain";
 		}
 		if (fileName.endsWith(".pdf")) {
