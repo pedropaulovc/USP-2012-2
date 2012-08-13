@@ -3,7 +3,18 @@ package servidorWeb;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
+/**
+ * Implementação do interpretador de arquivos .bfhtml. Substitui código brainfuck
+ * incluido entre tags <% e %> pela saída do programa executado. 
+ * @author Pedro Paulo Vezzá Campos - 7538743
+ */
 public class Bfhtml {
+	/**
+	 * Função responsável por receber código html possivelmente contendo código brainfuck
+	 * incluido entre tags <% e %>. Substitui os trechos de código pela saída do programa.
+	 * @param entrada O código html descrito
+	 * @return O novo html com o código substituído pela saída do interpretador.
+	 */
 	public static String interpretar(String entrada) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PrintStream ps = new PrintStream(baos);
