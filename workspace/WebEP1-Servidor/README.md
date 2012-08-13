@@ -6,13 +6,16 @@
 
 ## Compilação e Execução
 	O arquivo enviado é um projeto Eclipse compactado, podendo ser importado nele
-	para compilação e execução.  
+	para compilação e execução. 
+	
+	O servidor foi desenvolvido em ambiente Debian GNU/Linux utilizando Eclipse
+	Galileo e J2SE-1.5.
 
 ## Manual de Uso e Testes
 	O servidor web está configurado por padrão para exibir arquivos contidos no
 	diretório src/www do projeto. Isto pode ser alterado na classe WebServer 
 	variável diretorioBase.
-	
+
 	Cada requisição feita ao servidor gera um cookie enviado ao cliente que
 	conterá no campo "qtd_visitas": 1 caso não haja cookies armazenados no 
 	cliente ou i + 1 sendo i a quantidade computada de acessos gravada no 
