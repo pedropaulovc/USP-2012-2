@@ -1,4 +1,5 @@
 package servidorWeb;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,6 +9,17 @@ import java.util.Map;
 
 import static servidorWeb.WebServer.nome;
 
+/**
+ * Classe responsável por encapsular operações de escrita em um cabeçalho HTTP
+ * de saída.
+ * 
+ * Uso básico:
+ * 
+ * CabecalhoSaida cs = new CabecalhoSaida();
+ * cs.definirStatus().definirLinha("Server: Lorem Ipsum").enviar();
+ * 
+ * @author Pedro Paulo Vezzá Campos - 7538743
+ */
 public class CabecalhoSaida {
 	public static final String CRLF = "\r\n";
 	private int status = 500;
@@ -59,23 +71,47 @@ public class CabecalhoSaida {
 			put(505, "HTTP Version Not Supported");
 		}
 	};
-	
-	public CabecalhoSaida(DataOutputStream output){
+
+	/**
+	 * Construtor do objeto.
+	 * 
+	 * @param output
+	 *            O stream de saída a ser utilizado pela classe
+	 */
+	public CabecalhoSaida(DataOutputStream output) {
 		this.output = output;
 	}
 
+	/**
+	 * Função responsável por definir o status HTTP 2xx, 3xx... da resposta do
+	 * servidor.
+	 * 
+	 * @param status O código de status HTTP
+	 * @return O próprio objeto
+	 */
 	public CabecalhoSaida definirStatus(int status) {
 		this.status = status;
 		return this;
 	}
-
+	/**
+	 * Função responsável por definir uma linha de header HTTP no cabeçalho.
+	 * 
+	 * @param linha A linha de header HTTP
+	 * @return O próprio objeto
+	 */
 	public CabecalhoSaida definirLinha(String linha) {
 		linhas.add(linha);
 		return this;
 	}
 
+	/**
+	 * Função responsável por enviar o cabeçalho ao destinatário.
+	 * 
+	 * @return O próprio objeto
+	 */
 	public CabecalhoSaida enviar() throws IOException {
-		output.writeBytes("HTTP/1.1 " + status + " " + codigos.get(status) + CRLF);
+		output.writeBytes("HTTP/1.1 " + status + " " + codigos.get(status)
+				+ CRLF);
 		output.writeBytes("Server: " + nome + CRLF);
 		for (String linha : linhas)
 			output.writeBytes(linha + CRLF);

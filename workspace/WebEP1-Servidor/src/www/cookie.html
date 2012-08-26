@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta charset="utf-8">
+		<title>Teste de cookie</title>
+		<!--[if IE]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<script type="text/javascript">
+		<!--
+		/* COOKIES */
+
+		var Cookies = {
+		init: function () {
+			var allCookies = document.cookie.split('; ');
+			for (var i=0;i<allCookies.length;i++) {
+				var cookiePair = allCookies[i].split('=');
+				this[cookiePair[0]] = cookiePair[1];
+			}
+		}
+		};
+	
+		//<![CDATA[
+		onload=function()
+	  	{
+		  Cookies.init();
+		  var txt=document.getElementById("contador")
+		  txt.innerHTML="Você acessou este servidor " + Cookies["qtd_visitas"] + " vezes!";
+		  }
+		//]]>
+		// -->
+		</script>
+		<script type="text/javascript">
+
+</script>
+
+		
+	</head>
+	<body>
+		<h1>Teste de cookie</h1>
+
+		<div id="contador"></div>
+
+	</body>
+</html>
