@@ -1,37 +1,48 @@
 #include "servidor_http.h"
 
 void executar_servidor_http(int socket){
-	int n;
+	int content_length = -1;
 	char linha[MAXLINE + 1];
 	socket_conexao = socket;
 
-	if(( n = read(socket_conexao, linha, MAXLINE) ) == 0)
-		return;
-	linha[n]= '\0';
-	
-	printf("[%d:\n%s]\n", getpid(), linha);
+	//Lemos a linha inicial da requisição
+	ler_linha(linha, MAXLINE);
+		
+	printf("[%d: %s]\n", getpid(), linha);
 
+	//Parseamos os seus conteúdos
 	requisicao req = interpretar_requisicao(linha);
 	
-	while(  strcmp(linha, "\r\n") != 0 &&
-			strcmp(linha + n - 4, "\r\n\r\n") != 0 &&
-			strcmp(linha + n - 2, "\n\n") != 0) {
-		n = read(socket_conexao, linha, MAXLINE);
-		linha[n] = '\0';
+	//Varremos os headers enviados pelo cliente
+	//O valor de Content-Length é útil para requisições POST
+	while(linha[0] == '\0'){
+		ler_linha(linha, MAXLINE);
+		sscanf(linha, "Content-Length: %d", &content_length);
 	}
-
+	
+	//Lemos o conteúdo do POST, se for o caso.
+	if(req.tipo == POST && content_length > 0)
+		ler_linha(linha, content_length);
+	
+	//Montando a resposta do servidor
 	resposta resp;
 	resp.protocolo = HTTP11;
 	
+	//Montando o caminho no disco do arquivo a ser procurado
 	strcpy(resp.arquivo, diretorio_www);
 	strcat(resp.arquivo, req.caminho);
 	
+	//Se foi requisitado um diretório, procure pelo index.html
+	if(req.caminho[strlen(req.caminho) - 1] == '/')
+		strcat(resp.arquivo, "index.html");
+	
+	//O arquivo requisitado existe?
 	struct stat st;
 	if(stat(resp.arquivo, &st) == 0 && S_ISREG(st.st_mode))
 		resp.status = 200;
 	else {
 		resp.status = 404;
-		getcwd(resp.arquivo, PATH_MAX);
+		strcpy(resp.arquivo, diretorio_www);
 		strcat(resp.arquivo, "/404.html");
 	}
 	
@@ -41,7 +52,7 @@ void executar_servidor_http(int socket){
 
 requisicao interpretar_requisicao(char linha[]){
 	requisicao req;
-	char *resto;
+	char *resto = NULL;
 	char *token;
 	char *ptr = linha;
 
@@ -79,7 +90,7 @@ requisicao interpretar_requisicao(char linha[]){
 	return req;
 }
 
-void enviar_resposta(resposta resp){
+void enviar_resposta(resposta resp, int post){
 	char tmp[MAXLINE + 1];
 	char *protocolo, *nome_status;
 	int tam_tmp;
@@ -137,22 +148,16 @@ void enviar_resposta(resposta resp){
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Vary: Accept-Encoding\r\n");
 	escrever_buffer(tmp, tam_tmp);
 
-	//Content-Encoding:	gzip
-	//TODO Implementar gzip e modificar content-length
 
 	//Content-Length:	349
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Length: %d\r\n", (int) infos.st_size);
 	escrever_buffer(tmp, tam_tmp);
 	
-	//Keep-Alive: timeout=15, max=100
-	//TODO
-	
-	//Connection: Keep-Alive
-	//TODO trocar de close para Keep-Alive
+	//Connection: close
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Connection: close\r\n");
 	escrever_buffer(tmp, tam_tmp);
 	
-	//Content-Type: text/html; charset=iso-8859-1
+	//Content-Type: text/html
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Type: %s\r\n", 
 						obter_content_type(resp.arquivo));
 	escrever_buffer(tmp, tam_tmp);
@@ -202,6 +207,23 @@ void definir_diretorio_www(char diretorio[]){
 	realpath(diretorio, diretorio_www); 
 }
 
+int ler_linha(char linha[], int tam){
+	int i = 0;
+	char c;
+	
+	while(i < tam - 1 && read(socket_conexao, &c, 1)){
+		if(c == '\r')
+			continue;
+		else if(c == '\n')
+			break;
+		else
+			linha[i++] = c;
+	}
+
+	linha[i]= '\0';
+	
+	return i + 1;
+}
 
 char* obter_content_type(char nome_arquivo[]){
 	while(*nome_arquivo)

@@ -56,10 +56,6 @@ int main (int argc, char **argv) {
    /* Retorno da função fork para saber quem é o processo filho e quem
     * é o processo pai */
    pid_t childpid;
-   /* Armazena linhas recebidas do cliente */
-	char	recvline[MAXLINE + 1];
-   /* Armazena o tamanho da string lida do cliente */
-   ssize_t  n;
    
 	if (argc < 2) {
       fprintf(stderr,"Uso: %s <Porta> [Dir_www]\n",argv[0]);
@@ -142,7 +138,7 @@ int main (int argc, char **argv) {
        * processo filho. */
       if ( (childpid = fork()) == 0) {
          /**** PROCESSO FILHO ****/
-         printf("[Uma conexao aberta]\n");
+         printf("[%d: Conexao aberta]\n", getpid());
          /* Já que está no processo filho, não precisa mais do socket
           * listenfd. Só o processo pai precisa deste socket. */
          close(listenfd);
@@ -174,7 +170,7 @@ int main (int argc, char **argv) {
 
          /* Após ter feito toda a troca de informação com o cliente,
           * pode finalizar o processo filho */
-         printf("[Uma conexao fechada]\n");
+         printf("[%d: Conexao fechada]\n", getpid());
          exit(0);
       }
       /**** PROCESSO PAI ****/

@@ -54,4 +54,5 @@ void definir_diretorio_www(char diretorio[]);
 void escrever_buffer(char string[], int tam_string);
 void enviar_buffer();
 void executar_servidor_http(int socket);
+int ler_linha(char linha[], int tam);
 
