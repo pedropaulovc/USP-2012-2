@@ -122,8 +122,12 @@ gera_imagem (L, Path) ->
 		_	  -> ok
 	end,
 
-	io:format(Res, "P2~n~p ~p~n", [n_cols(), n_lins()]).
-	%TODO continuar essa merda
+	M = cria_matriz(L),
+
+	io:format(Res, "P2~n~p ~p~n~p~n", [n_cols(), n_lins(), branco()]),
+	
+	ForCol = fun(Lin) -> for_print(fun(Col) -> io:format(Res, "~p ", [matrix:get(Lin, Col, M)]) end, 0, n_cols(), Res) end,
+	for_print(ForCol, 0, n_lins(), Res).
 
 executa_algoritmo (Alg, Entrada) ->
 	case Alg of 
@@ -136,17 +140,26 @@ executa_algoritmo (Alg, Entrada) ->
 	end.
 
 
-for(_Fun, Fim, Fim) -> ok;
-for( Fun, Ini, Fim) -> Fun(Ini), for(Fun, Ini+1, Fim).
+
+
+for_print(_Fun, Fim, Fim, IO) -> ok;
+for_print( Fun, Ini, Fim, IO) -> Fun(Ini), for_print(Fun, Ini+1, Fim, IO).
+
+for(_Fun, Fim, Fim, Res) -> Res;
+for( Fun, Ini, Fim, Res) -> Novo = Fun(Ini, Res), for(Fun, Ini+1, Fim, Novo).
+
+
 
 preenche_retangulo(Matriz, Lin1, Lin2, Col1, Col2, Valor) -> 
-	ForCol = fun(Lin) -> for(fun(Col) -> matrix:set(Lin, Col, Valor, Matriz) end, Col1, Col2) end,
-	
-	for(ForCol, Lin1, Lin2).
+	ForCol = fun(Lin, M1) -> for(fun(Col, M2) -> matrix:set(Lin, Col, Valor, M2) end, Col1, Col2, M1) end,
+	for(ForCol, Lin1, Lin2, Matriz).
 
 
 cria_matriz (L) ->
-	M = matrix:new(n_lins(), n_cols()).
+	M = matrix:new(n_lins(), n_cols()),
+	N = preenche_retangulo(M, base(), base() + 1, 0, n_cols(), preto()), %Base
+	preenche_retangulo(N, 0, 300, 0, 400, cinza()).
+	
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

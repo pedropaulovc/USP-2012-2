@@ -3,7 +3,7 @@
 
 %% Cria uma nova matriz com M linhas e N colunas.
 new(M, N) -> 
-    {M, N, array:new(M * N, {default, 0})}.
+    {M, N, array:new(M * N, {default, a:branco()})}.
 
 %% Devolve o valor na linha I e coluna J da matriz.
 get(I, J, {_M, N, A}) ->
