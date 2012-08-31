@@ -15,14 +15,18 @@ void executar_servidor_http(int socket){
 	
 	//Varremos os headers enviados pelo cliente
 	//O valor de Content-Length é útil para requisições POST
-	while(linha[0] == '\0'){
+	while(linha[0] != '\0'){
 		ler_linha(linha, MAXLINE);
+		printf("[%d: %s]\n", getpid(), linha);
 		sscanf(linha, "Content-Length: %d", &content_length);
 	}
 	
 	//Lemos o conteúdo do POST, se for o caso.
-	if(req.tipo == POST && content_length > 0)
+	if(req.tipo == POST && content_length > 0){
 		ler_linha(linha, content_length);
+		printf("[%d: Conteúdo POST %s]\n", getpid(), linha);
+		interpretar_post(linha);
+	}
 	
 	//Montando a resposta do servidor
 	resposta resp;
@@ -46,8 +50,11 @@ void executar_servidor_http(int socket){
 		strcat(resp.arquivo, "/404.html");
 	}
 	
-	enviar_resposta(resp);
-	enviar_arquivo(resp.arquivo);
+	enviar_resposta(resp, req.tipo);
+	if(req.tipo == GET)
+		enviar_arquivo(resp.arquivo);
+	else
+		enviar_conteudo_post();
 }
 
 requisicao interpretar_requisicao(char linha[]){
@@ -90,7 +97,31 @@ requisicao interpretar_requisicao(char linha[]){
 	return req;
 }
 
-void enviar_resposta(resposta resp, int post){
+void interpretar_post(char linha[]){
+	char *resto = NULL;
+	char *token;
+	char *ptr = linha;
+
+	qtd_campos_post = 0;
+	token = strtok_r(ptr, "&=", &resto);
+	while(qtd_campos_post < MAXPOST && token){
+		strcpy(chaves_post[qtd_campos_post], token);
+	
+		ptr = resto;
+		token = strtok_r(ptr, "&=", &resto);
+		if(!token)
+			return;
+			
+		strcpy(valores_post[qtd_campos_post], token);
+		
+		ptr = resto;
+		token = strtok_r(ptr, "&=", &resto);
+		
+		qtd_campos_post++;
+	}
+}
+
+void enviar_resposta(resposta resp, tipo_requisicao tipo){
 	char tmp[MAXLINE + 1];
 	char *protocolo, *nome_status;
 	int tam_tmp;
@@ -129,7 +160,7 @@ void enviar_resposta(resposta resp, int post){
 	
 	struct stat infos;
 	int leu_infos_arquivo = stat(resp.arquivo, &infos) == 0 ? 1 : 0;
-	if (resp.status == 200 && leu_infos_arquivo) {
+	if (tipo == GET && resp.status == 200 && leu_infos_arquivo) {
 		//Last-Modified: Sun, 31 Jul 2011 17:26:08 GMT
 		tam_tmp = strftime(tmp, sizeof(tmp), "Last-Modified: %a, %d %b %Y %H:%M:%S %Z\r\n", 
 							localtime( &infos.st_mtime));
@@ -142,27 +173,47 @@ void enviar_resposta(resposta resp, int post){
 		//Accept-Ranges:	bytes
 		tam_tmp = snprintf(tmp, sizeof(tmp), "Accept-Ranges: bytes\r\n");
 		escrever_buffer(tmp, tam_tmp);
+		
+		//Content-Length:	349
+		tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Length: %d\r\n", (int) infos.st_size);
+		escrever_buffer(tmp, tam_tmp);
 	}
 	
 	//Vary:	Accept-Encoding
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Vary: Accept-Encoding\r\n");
 	escrever_buffer(tmp, tam_tmp);
 
-
-	//Content-Length:	349
-	tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Length: %d\r\n", (int) infos.st_size);
-	escrever_buffer(tmp, tam_tmp);
-	
 	//Connection: close
 	tam_tmp = snprintf(tmp, sizeof(tmp), "Connection: close\r\n");
 	escrever_buffer(tmp, tam_tmp);
 	
 	//Content-Type: text/html
-	tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Type: %s\r\n", 
-						obter_content_type(resp.arquivo));
+	char *content_type = "text/plain";
+	if(tipo == GET)
+		content_type = obter_content_type(resp.arquivo);
+	tam_tmp = snprintf(tmp, sizeof(tmp), "Content-Type: %s\r\n", content_type);
 	escrever_buffer(tmp, tam_tmp);
 	
 	escrever_buffer("\r\n", 2);
+	enviar_buffer();
+}
+
+void enviar_conteudo_post(){
+	char linha[MAXLINE + 1];
+	sprintf(linha,  "Você preencheu um formulário de %d campo(s): \r\n\r\n", qtd_campos_post);
+	escrever_buffer(linha, 49);
+
+	escrever_buffer("+--------------------+--------------------+\r\n", 45);
+	escrever_buffer("|      Campo         |        Valor       |\r\n", 45);
+	escrever_buffer("+--------------------+--------------------+\r\n", 45);
+	
+	int i;
+	for(i = 0; i < qtd_campos_post; i++){
+		sprintf(linha, "|%-20s|%-20s|\r\n", chaves_post[i], valores_post[i]);
+		escrever_buffer(linha, 45);
+	}
+	
+	escrever_buffer("+--------------------+--------------------+\r\n", 45);
 	enviar_buffer();
 }
 
@@ -211,7 +262,7 @@ int ler_linha(char linha[], int tam){
 	int i = 0;
 	char c;
 	
-	while(i < tam - 1 && read(socket_conexao, &c, 1)){
+	while(i < tam && read(socket_conexao, &c, 1)){
 		if(c == '\r')
 			continue;
 		else if(c == '\n')

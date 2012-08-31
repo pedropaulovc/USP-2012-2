@@ -14,6 +14,7 @@
 
 #define MAXLINE 4096
 #define NOME_SERVIDOR "Tupi/0.0.1"
+#define MAXPOST 32
 
 typedef enum {
 	GET,
@@ -45,9 +46,12 @@ char diretorio_www[PATH_MAX + 1];
 char buffer[MAXLINE + 1];
 int tam_buffer;
 int socket_conexao;
+char chaves_post[MAXPOST][MAXLINE + 1];
+char valores_post[MAXPOST][MAXLINE + 1];
+int qtd_campos_post;
 
 requisicao interpretar_requisicao(char requisicao[]);
-void enviar_resposta(resposta resp);
+void enviar_resposta(resposta resp, tipo_requisicao tipo);
 void enviar_arquivo(char nome_arquivo[]);
 char* obter_content_type(char nome_arquivo[]);
 void definir_diretorio_www(char diretorio[]);
@@ -55,4 +59,6 @@ void escrever_buffer(char string[], int tam_string);
 void enviar_buffer();
 void executar_servidor_http(int socket);
 int ler_linha(char linha[], int tam);
+void interpretar_post(char linha[]);
+void enviar_conteudo_post();
 
