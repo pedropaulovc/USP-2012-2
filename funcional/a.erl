@@ -49,14 +49,17 @@ main() ->	main ([2, standard_io, standard_io, null]).
 
 main (L) ->
 	case L of
-		[Alg] 							->	main([Alg, standard_io, standard_io, null]);
-		[Alg, Input] 					->	main([Alg, Input, standard_io, null]);
-		[Alg, Input, Output] 			->	main([Alg, Input, Output, null]);
+		[Alg] 				->	main([Alg, standard_io, standard_io, null]);
+		[Alg, Input] 			->	main([Alg, Input, standard_io, null]);
+		[Alg, Input, Output] 		->	main([Alg, Input, Output, null]);
 		[Alg, Input, Output, Imagem] 	->	Entrada = ler_entrada(Input),	
-											Saida = executa_algoritmo(Alg, Entrada),
-											formata_saida (Saida, Output),
-											gera_imagem (Saida, Imagem),
-											init:stop()
+							Saida = executa_algoritmo(Alg, Entrada),
+							formata_saida (Saida, Output),
+							gera_imagem (Saida, Imagem),
+							init:stop()
+		_				â€“>	io:format ("~nHmm, voce digitou argumentos a mais.", []),
+							init:stop().
+
 	end.
 
 
@@ -234,10 +237,10 @@ ler_entrada_r (Arq, Lido) ->
 
 
 
-n_lins() -> 600.                      % número de linhas da imagem
-n_cols() -> 800.                      % número de colunas da imagem
-borda_inf() -> n_lins() - 1.          % borda inferior (última linha da imagem) 
-margem_inf() -> 20.                   % linhas do eixo base à borda inferior da imagem
+n_lins() -> 600.                      % nï¿½mero de linhas da imagem
+n_cols() -> 800.                      % nï¿½mero de colunas da imagem
+borda_inf() -> n_lins() - 1.          % borda inferior (ï¿½ltima linha da imagem) 
+margem_inf() -> 20.                   % linhas do eixo base ï¿½ borda inferior da imagem
 base() -> borda_inf() - margem_inf(). % linha do eixo base 
        
 branco() -> 15.                       % valor de maxval
