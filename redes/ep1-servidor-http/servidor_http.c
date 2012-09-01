@@ -200,7 +200,7 @@ void enviar_resposta(resposta resp, tipo_requisicao tipo){
 
 void enviar_conteudo_post(){
 	char linha[MAXLINE + 1];
-	sprintf(linha,  "Você preencheu um formulário de %d campo(s): \r\n\r\n", qtd_campos_post);
+	sprintf(linha,  "Voce preencheu um formulario de %d campo(s): \r\n\r\n", qtd_campos_post);
 	escrever_buffer(linha, 49);
 
 	escrever_buffer("+--------------------+--------------------+\r\n", 45);
