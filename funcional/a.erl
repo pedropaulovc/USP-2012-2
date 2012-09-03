@@ -49,18 +49,18 @@ main() ->	main ([2, standard_io, standard_io, null]).
 
 main (L) ->
 	case L of
-		[Alg] 				->	main([Alg, standard_io, standard_io, null]);
-		[Alg, Input] 			->	main([Alg, Input, standard_io, null]);
-		[Alg, Input, Output] 		->	main([Alg, Input, Output, null]);
-		[Alg, Input, Output, Imagem] 	->	Entrada = ler_entrada(Input),	
-							Saida = executa_algoritmo(Alg, Entrada),
-							formata_saida (Saida, Output),
-							gera_imagem (Saida, Imagem),
-							init:stop()
-		_				–>	io:format ("~nHmm, voce digitou argumentos a mais.", []),
-							init:stop().
-
+		[Alg] 								->	main([Alg, standard_io, standard_io, null]);
+		[Alg, Input] 						->	main([Alg, Input, standard_io, null]);
+		[Alg, Input, Output] 				->	main([Alg, Input, Output, null]);
+		[Alg, Input, Output, Imagem | T ] 	->	Entrada = ler_entrada(Input),	
+												Saida = executa_algoritmo(Alg, Entrada),
+												formata_saida (Saida, Output),
+												gera_imagem (Saida, Imagem),
+												init:stop()
 	end.
+
+% Pedrão, coloquei um Tail no final da ultima lista pra ele descartar possiveis argumentos adicionais. Parece bom?
+% Amanha vou dar uma olhada no resto e tentar acabar a matriz. Boa viagem ae!
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
