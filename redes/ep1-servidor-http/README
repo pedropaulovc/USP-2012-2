@@ -1,0 +1,37 @@
+# MAC0448 - 2012 - PROGRAMAÇÃO PARA REDES DE COMPUTADORES
+# EP1: Servidor Web
+
+## Autor
+	Pedro Paulo Vezzá Campos - 7538743
+
+## Compilação
+	O programa acompanha um Makefile. Para compilar o EP execute o comando
+	''make'' no diretório descompactado. O executável gerado chama-se
+	''ep1-pedro''. 
+	
+## Execução
+	O programa aceita dois parâmetros de execução:
+	
+	ep1-pedro porta [diretorio-www]
+	
+	porta        : Porta de escuta do servidor
+	diretorio-www: Diretório de onde serão servidos os arquivos aos clientes
+	               do servidor (Para fins de teste pode-se utilizar o diretório
+	               www fornecido juntamente com os arquivos fonte do EP.)
+
+	Caso o servidor receba uma requisição de um diretório (GET /dir/ HTTP/1.1)
+	buscará neste diretório um arquivo index.html, caso este não seja encontrado
+	exibe um erro 404 Not Found.
+	
+	Em caso de requisições POST envia ao usuário uma tabela em formato de texto 
+	puro contendo os próprios campos e valores digitados pelo usuário.
+
+## Testes
+	O funcionamento correto do programa foi verificado para as situações 
+	descritas no EP através de testes tanto no navegador Firefox quanto Chrome e
+	via Telnet. O diretório www contém os arquivos utilizados para teste. 
+
+## Documentação do código
+	A documentação do código produzido para o EP encontra-se no arquivo 
+	servidor_http.h. 
+

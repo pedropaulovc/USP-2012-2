@@ -1,3 +1,10 @@
+/**
+* Aluno: Pedro Paulo Vezzá Campos - 7538743
+* MAC0448-2012 - Programação para Redes de Computadores - Tarefa 1: Servidor Web
+* Sobre o arquivo: Aqui são implementadas as funções declaradas no arquivo 
+* servidor_http.h relevantes ao servidor web descrito na especificação do EP1.
+*/
+
 #include "servidor_http.h"
 
 void executar_servidor_http(int socket){

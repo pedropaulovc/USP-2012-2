@@ -1,5 +1,7 @@
 /* Por Prof. Daniel Batista <batista@ime.usp.br>
  * Em 12/08/2012
+ * Modificações pontuais por Pedro Paulo Vezzá Campos - 7538743
+ * Em 01/09/2012
  * 
  * Um código simples (não é o código ideal, mas é o suficiente para o
  * EP) de um servidor de eco a ser usado como base para o EP1. Ele
@@ -58,11 +60,11 @@ int main (int argc, char **argv) {
    pid_t childpid;
    
 	if (argc < 2) {
-      fprintf(stderr,"Uso: %s <Porta> [Dir_www]\n",argv[0]);
+      fprintf(stderr,"Uso: %s <Porta> [Dir_www]\n\n",argv[0]);
       fprintf(stderr,"Vai rodar um servidor HTTP na porta <Porta> TCP ");
-      fprintf(stderr,"servindo os arquivos do diretorio Dir_www. ");
-      fprintf(stderr,"Caso este nao seja fornecido considera o diretório do ");
-      fprintf(stderr,"executavel como sendo o Dir_www.\n");
+      fprintf(stderr,"servindo os arquivos do diretorio Dir_www.\n");
+      fprintf(stderr,"Caso este nao seja fornecido utiliza o diretorio de ");
+      fprintf(stderr,"execucao do programa.\n");
 		exit(1);
 	}
 	

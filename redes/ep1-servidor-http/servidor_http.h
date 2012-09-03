@@ -1,3 +1,11 @@
+/**
+* Aluno: Pedro Paulo Vezzá Campos - 7538743
+* MAC0448-2012 - Programação para Redes de Computadores - Tarefa 1: Servidor Web
+* Sobre o arquivo: Aqui são declarados e documentados todos os protótipos das 
+* funções e estruturas relevantes ao servidor web a serem implementados no 
+* arquivo servidor_http.c. 
+*/
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -136,7 +144,8 @@ void enviar_arquivo(char nome_arquivo[]);
 char* obter_content_type(char nome_arquivo[]);
 /**
  * Recebe como parâmetro um caminho para o diretório de onde serão servidos os
- * arquivos pelo servidor web.
+ * arquivos pelo servidor web. Caso receba NULL como parâmetro define o diretório
+ * de execução como sendo o diretório www.
  */
 void definir_diretorio_www(char diretorio[]);
 /**
