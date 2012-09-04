@@ -8,45 +8,6 @@
 
 main() ->	main ([2, standard_io, standard_io, null]).
 	
-%%	Entrada = ler_entrada(stdin),
-%%	Saida = algoritmo2(Entrada),
-%%	formata_saida_tela (Saida),
-%%	init:stop().
-
-%	
-%main([Alg]) ->	main ([Alg, standard_io, standard_io, null]).
-
-%%	Entrada = ler_entrada(stdin),
-%%	Saida =	escolhe_algoritmo(Alg),
-%%	formata_saida_tela (Saida),
-%%	init:stop().
-%	
-
-%main ([Alg, Input]) ->	main ([Alg, Input, standard_io, null]).
-
-%%	Entrada = ler_entrada(Input), 
-%%	Saida = escolhe_algoritmo(Alg),
-%%	formata_saida_tela (Saida),
-%%	init:stop().
-
-
-%main ([Alg, Input, Output]) ->	main ([Alg, Input, Output, null]).
-
-%%	Entrada = ler_entrada(Input),	
-%%	Saida = escolhe_algoritmo(Alg),
-%%	formata_saida_arquivo (Saida, Output),
-%%	init:stop().
-
-
-%main ([Alg, Input, Output, Imagem]) ->	
-
-%	Entrada = ler_entrada(Input),	
-%	Saida = escolhe_algoritmo(Alg),
-%	formata_saida_arquivo (Saida, Output),
-%	gera_imagem (Saida, Imagem),
-%	init:stop().
-	
-
 main (L) ->
 	case L of
 		[Alg] 								->	main([Alg, standard_io, standard_io, null]);
@@ -61,6 +22,7 @@ main (L) ->
 
 % Pedrão, coloquei um Tail no final da ultima lista pra ele descartar possiveis argumentos adicionais. Parece bom?
 % Amanha vou dar uma olhada no resto e tentar acabar a matriz. Boa viagem ae!
+% @Pedro Beleza!
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,11 +59,7 @@ abre_arquivo (Onde, Modo) ->
 	end.
 
 
-qtd_elementos(L) -> qtd_elementos(L, 0).
-qtd_elementos([], C) -> C;
-qtd_elementos([_H|T], C) -> qtd_elementos(T, 1 + C).
-
-split(L) -> lists:split(qtd_elementos(L) div 2, L).
+split(L) -> lists:split(length(L) div 2, L).
 
 silhueta_de_edificio({E, A, D}) -> [{E, A}, {D, 0}].
 		
@@ -116,8 +74,8 @@ uniao (L1, L2) -> L1++L2.
 
 
 gera_imagem (_L, null) -> ok;
-gera_imagem (L, Path) ->
-	{Status, Res} = file:open (Path, write),
+gera_imagem (L, Onde) ->
+	{Status, Res} = file:open (Onde, write),
 	
 	case Status of
 		error -> io:format("~p~n", [Res]),
@@ -129,8 +87,7 @@ gera_imagem (L, Path) ->
 
 	io:format(Res, "P2~n~p ~p~n~p~n", [n_cols(), n_lins(), branco()]),
 	
-	ForCol = fun(Lin) -> for_print(fun(Col) -> io:format(Res, "~p ", [matrix:get(Lin, Col, M)]) end, 0, n_cols(), Res) end,
-	for_print(ForCol, 0, n_lins(), Res).
+	imprime_matriz(M, Res, 0, n_lins(), 0, n_cols()).
 
 executa_algoritmo (Alg, Entrada) ->
 	case Alg of 
@@ -143,19 +100,35 @@ executa_algoritmo (Alg, Entrada) ->
 	end.
 
 
+imprime_matriz(_M, _Handler, FimL, FimL, _AtuC, _FimC) ->
+	ok;
 
-
-for_print(_Fun, Fim, Fim, IO) -> ok;
-for_print( Fun, Ini, Fim, IO) -> Fun(Ini), for_print(Fun, Ini+1, Fim, IO).
-
-for(_Fun, Fim, Fim, Res) -> Res;
-for( Fun, Ini, Fim, Res) -> Novo = Fun(Ini, Res), for(Fun, Ini+1, Fim, Novo).
+imprime_matriz(M, Handler, AtuL, FimL, AtuC, FimC) ->
+	if  AtuC == FimC - 1 -> 
+			io:format(Handler, "~p~n", [matrix:get(AtuL, FimC - 1, M)]),
+			imprime_matriz(M, Handler, AtuL + 1, FimL, 0, FimC);
+		true             -> 
+			io:format(Handler, "~p ", [matrix:get(AtuL, AtuC, M)]),
+			imprime_matriz(M, Handler, AtuL, FimL, AtuC + 1, FimC)
+	end.
 
 
 
 preenche_retangulo(Matriz, Lin1, Lin2, Col1, Col2, Valor) -> 
-	ForCol = fun(Lin, M1) -> for(fun(Col, M2) -> matrix:set(Lin, Col, Valor, M2) end, Col1, Col2, M1) end,
-	for(ForCol, Lin1, Lin2, Matriz).
+	preenche(Matriz, Lin1, Lin1, Lin2, Col1, Col1, Col2, Valor).
+
+%Completou todas as linhas
+preenche(M, _IniL, FimL, FimL, _IniC, _AtuC, _FimC, _Valor) -> M;
+
+%Completou todas as colunas de uma linha
+preenche(M, IniL, AtuL, FimL, IniC, FimC, FimC, Valor) ->
+	preenche(M, IniL, AtuL + 1, FimL, IniC, IniC, FimC, Valor);
+
+%Executa a operação
+preenche(M, IniL, AtuL, FimL, IniC, AtuC, FimC, Valor) ->
+	M2 = matrix:set(AtuL, AtuC, Valor, M),
+	preenche(M2, IniL, AtuL, FimL, IniC, AtuC + 1, FimC, Valor).
+
 
 
 cria_matriz (L) ->
@@ -175,7 +148,7 @@ formata_saida (L, Onde) ->
 					standard_io	->	standard_io;
 					_			->	abre_arquivo(Onde, write)
 				end,	
-	io:format(Handler, "~p~n", [qtd_elementos(L)]),
+	io:format(Handler, "~p~n", [length(L)]),
 	imprime (L, Handler).
 
 
@@ -186,13 +159,13 @@ imprime([H|T], Handler) ->
 	imprime(T, Handler).
 
 %formata_saida_arquivo(L, Arquivo) ->
-%	io:format(Arquivo, "~p~n", [qtd_elementos(L)]),
+%	io:format(Arquivo, "~p~n", [length(L)]),
 %	imprime_arquivo(L, Arquivo).
 
 
 
 %formata_saida_tela(L) ->
-%	io:format("~p~n", [qtd_elementos(L)]),
+%	io:format("~p~n", [length(L)]),
 %	imprime_tela(L).
 
 %imprime_tela([]) -> ok;

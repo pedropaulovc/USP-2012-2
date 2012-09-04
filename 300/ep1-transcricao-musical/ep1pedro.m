@@ -10,18 +10,37 @@
 
 1;
 
-function [U, V] = montaDft(N)
+function [U, V] = montarMatrizDft(N)
 	U = zeros(N, N); #Parte real da DFT
 	V = zeros(N, N); #Parte imaginária da DFT
 	
-	raizN = 1; #TODO Trocar para sqrt(N)
+	raizN = sqrt(N);
 	for m = 0 : N - 1
 		for n = 0: N - 1
-			w = (2 * pi * m * n)/N;
-			U(m + 1, n + 1) = cos(w);
-			V(m + 1, n + 1) = -sin(w);
+			w = -(2 * pi * m * n)/N;
+			U(m + 1, n + 1) = cos(w)/raizN;
+			V(m + 1, n + 1) = -sin(w)/raizN;
 		endfor
 	endfor
+endfunction
+
+function [U, V] = calcularDft(x)
+	N = length(x);
+	U = zeros(N, 1);
+	V = zeros(N, 1);
+	
+	for m = 0 : N - 1
+		for n = 0 : N - 1
+			w = -(2 * pi * m * n)/N;
+			U += x(n + 1) * cos(w);
+			V += x(n + 1) * sin(w);
+		endfor
+	endfor
+endfunction
+
+
+function [amp] = calcularAmplitudes(quantR, quantI)
+	amp = hypot(quantR, quantI);
 endfunction
 
 function plotarDominioTempo(sinal, amostragem)
@@ -29,26 +48,13 @@ function plotarDominioTempo(sinal, amostragem)
 	plot(tempo, sinal);
 endfunction
 
-function [amp] = calcularAmplitudes(quantR, quantI)
-	amp = zeros(length(quantR), 1);
-	for i = 1 : length(quantR)
-		amp(i) = quantR(i) * quantR(i) + quantI(i) * quantI(i);
-	endfor
-endfunction
 
-function plotarDominioFrequencias(amplitudes)
-	plot(1:length(amplitudes), amplitudes);
+function plotarDominioFrequencias(amplitudes, taxaAmostragem)
+	N = length(amplitudes);
+	plot((1:N) * taxaAmostragem / N, amplitudes);
 endfunction
 	
-#function executar()
-	if(nargin < 1)
-		fprintf(stderr, "Forneça como argumento ao programa o arquivo a ser analisado.\n");
-		fprintf(stderr, "Ex: octave %s lullaby.wav\n", program_name());
-		return;
-	endif
-
-	nomeArquivo = argv(){1};
-
+function executar(nomeArquivo)
 	# Decodificar as informações contidas no arquivo WAV;
 	try
 		[y, fs, nbits] = wavread(nomeArquivo);
@@ -59,9 +65,17 @@ endfunction
 	
 	x = fft(y);
 	
-	rx = real(x);
-	ix = imag(x);
-	amp = calcularAmplitudes(rx, ix)
-	plotarDominioFrequencias(amp)
-#endfunction
+	amp = calcularAmplitudes(real(x), imag(x));
+	plotarDominioFrequencias(amp, fs);
+endfunction
+
+
+if(nargin < 1)
+	fprintf(stderr, "Forneça como argumento ao programa o arquivo a ser analisado.\n");
+	fprintf(stderr, "Ex: octave %s lullaby.wav\n", program_name());
+	return;
+else
+	executar(argv(){1});
+endif
+
 
