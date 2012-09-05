@@ -10,20 +10,15 @@ main() ->	main ([2, standard_io, standard_io, null]).
 	
 main (L) ->
 	case L of
-		[Alg] 								->	main([Alg, standard_io, standard_io, null]);
-		[Alg, Input] 						->	main([Alg, Input, standard_io, null]);
-		[Alg, Input, Output] 				->	main([Alg, Input, Output, null]);
-		[Alg, Input, Output, Imagem | T ] 	->	Entrada = ler_entrada(Input),	
-												Saida = executa_algoritmo(Alg, Entrada),
-												formata_saida (Saida, Output),
-												gera_imagem (Saida, Imagem),
-												init:stop()
+		[Alg]                               -> main([Alg, standard_io, standard_io, null]);
+		[Alg, Input]                        -> main([Alg, Input, standard_io, null]);
+		[Alg, Input, Output]                -> main([Alg, Input, Output, null]);
+		[Alg, Input, Output, Imagem | T ]   -> Entrada = ler_entrada(Input),	
+                                               Saida = executa_algoritmo(Alg, Entrada),
+                                               formata_saida (Saida, Output),
+                                               gera_imagem (Saida, Imagem),
+                                               init:stop()
 	end.
-
-% Pedrão, coloquei um Tail no final da ultima lista pra ele descartar possiveis argumentos adicionais. Parece bom?
-% Amanha vou dar uma olhada no resto e tentar acabar a matriz. Boa viagem ae!
-% @Pedro Beleza!
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                       ALGORITMOS
@@ -95,7 +90,7 @@ executa_algoritmo (Alg, Entrada) ->
 		'2' -> 	algoritmo2 (Entrada);
 		'R' -> 	silhueta_com_foldr (Entrada);
 		'L' -> 	silhueta_com_foldl (Entrada);
-		_ 	-> 	io:format ("~nParametro Invalido!~nDeve ser '1', '2', 'L' ou 'R'~n~n", []),
+		_   -> 	io:format ("~nParametro Invalido!~nDeve ser '1', '2', 'L' ou 'R'~n~n", []),
 				init:stop()
 	end.
 
@@ -113,7 +108,6 @@ imprime_matriz(M, Handler, AtuL, FimL, AtuC, FimC) ->
 	end.
 
 
-
 preenche_retangulo(Matriz, Lin1, Lin2, Col1, Col2, Valor) -> 
 	preenche(Matriz, Lin1, Lin1, Lin2, Col1, Col1, Col2, Valor).
 
@@ -128,7 +122,6 @@ preenche(M, IniL, AtuL, FimL, IniC, FimC, FimC, Valor) ->
 preenche(M, IniL, AtuL, FimL, IniC, AtuC, FimC, Valor) ->
 	M2 = matrix:set(AtuL, AtuC, Valor, M),
 	preenche(M2, IniL, AtuL, FimL, IniC, AtuC + 1, FimC, Valor).
-
 
 
 cria_matriz (L) ->
@@ -158,24 +151,6 @@ imprime([H|T], Handler) ->
 	io:format(Handler, "~p ~p~n", [X, Y]),
 	imprime(T, Handler).
 
-%formata_saida_arquivo(L, Arquivo) ->
-%	io:format(Arquivo, "~p~n", [length(L)]),
-%	imprime_arquivo(L, Arquivo).
-
-
-
-%formata_saida_tela(L) ->
-%	io:format("~p~n", [length(L)]),
-%	imprime_tela(L).
-
-%imprime_tela([]) -> ok;
-%imprime_tela([H|T]) ->
-%	{X, Y} = H,
-%	io:format("~p ~p~n", [X, Y]),
-%	imprime_tela(T).
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                         ENTRADA
@@ -201,13 +176,9 @@ ler_entrada_r (Arq, Lido) ->
 
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                        DEFINEs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 
 n_lins() -> 600.                      % n�mero de linhas da imagem

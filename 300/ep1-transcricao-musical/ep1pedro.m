@@ -53,7 +53,71 @@ function plotarDominioFrequencias(amplitudes, taxaAmostragem)
 	N = length(amplitudes);
 	plot((1:N) * taxaAmostragem / N, amplitudes);
 endfunction
+
+function [eventos] = obterEventos(amplitudes, taxaAmostragem)
+	media = mean(amplitudes);
+	desvio = std(amplitudes);
+	N = length(amplitudes);
 	
+	frequencias = [];
+	for i = 1:N/2
+		if amplitudes(i) > media + 5 * desvio;
+			frequencias = [frequencias; i *  taxaAmostragem / N];
+		endif
+	endfor
+	
+	eventos = [];
+	for i = 1:length(frequencias)
+		eventos = union(eventos, buscarEvento(frequencias(i)));
+	endfor
+	
+endfunction
+
+function [evento] = buscarEvento(freq)
+	ini = 12;
+	fim = 143;
+	mid = floor((ini + fim) / 2);
+	
+	while(fim - ini > 1)
+		mid = floor((ini + fim) / 2);
+		
+		comp = compare(freq, obterFrequencia(mid));
+		if(comp == 0)
+			evento = mid;
+			return;
+		elseif(comp < 0)
+			fim = mid;
+		else
+			ini = mid;
+		endif
+	endwhile
+	
+	if(abs(freq - obterFrequencia(ini)) < abs(freq - obterFrequencia(fim)))
+		evento = ini;
+	else
+		evento = fim;
+	endif
+endfunction
+
+function [comp] = compare(x, y)
+	if (abs(x - y) <= 1e-2)
+		comp = 0;
+	elseif (x > y)
+		comp = 1;
+	else
+		comp = -1;
+	endif
+endfunction
+
+function [evento] = obterEventoMidi(freq)
+	evento = round(12 * log2(freq/440) + 69);
+endfunction
+
+function [freq] = obterFrequencia(evento)
+	freq = nthroot(2, 12) ^ (evento - 69) * 440;
+endfunction
+
+
 function executar(nomeArquivo)
 	# Decodificar as informações contidas no arquivo WAV;
 	try
@@ -66,7 +130,8 @@ function executar(nomeArquivo)
 	x = fft(y);
 	
 	amp = calcularAmplitudes(real(x), imag(x));
-	plotarDominioFrequencias(amp, fs);
+	%plotarDominioFrequencias(amp, fs);
+	obterEventos(amp, fs)
 endfunction
 
 
