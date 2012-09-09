@@ -13,8 +13,8 @@ main (L) ->
 		[Alg]                               -> main([Alg, standard_io, standard_io, null]);
 		[Alg, Input]                        -> main([Alg, Input, standard_io, null]);
 		[Alg, Input, Output]                -> main([Alg, Input, Output, null]);
-		[Alg, Input, Output, Imagem | _ ]   -> Entrada = ler_entrada(Input),	
-                                               Saida = executa_algoritmo(Alg, Entrada),
+		[Alg, Input, Output, Imagem | _ ]   -> Entrada = ler_entrada(Input),
+											   Saida = executa_algoritmo(Alg, Entrada),
                                                formata_saida (Saida, Output),
                                                gera_imagem (Saida, Imagem),
                                                init:stop()
@@ -96,8 +96,8 @@ une([{X1, A1}|T1], [{X2, A2}|T2], Alt1, Alt2, Resp) ->
 abre_arquivo (Onde, Modo) ->
 	{Status, Res} = file:open (Onde, Modo),
 	case Status of
-		ok	->	Res;	
-		_	->	io:format ("Impossivel abrir o arquivo ~p", [Onde]),
+		ok   -> Res;	
+		Erro -> io:format ("Impossivel abrir o arquivo ~p: ~p~n", [Onde, Erro]),
 				init:stop()
 	end.
 
@@ -116,7 +116,7 @@ gera_imagem (L, Onde) ->
 	{Status, Res} = file:open (Onde, write),
 	
 	case Status of
-		error -> io:format("~p~n", [Res]),
+		error -> io:format("Erro na geração da imagem: ~p~n", [Res]),
 							init:stop();
 		_	  -> ok
 	end,
@@ -168,7 +168,34 @@ cria_matriz_rec([{X1, A1}, {X2, 0}], M) ->
 cria_matriz_rec([{X1, A1}, {X2, A2}|T], M) -> 
 	N = preenche_retangulo(M, base() - A1, base(), X1, X2, cinza()),
 	cria_matriz_rec([{X2, A2}|T], N).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         ENTRADA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ler_entrada(Onde) ->
 	
+	Fonte = case Onde of
+				standard_io -> standard_io;
+				_           -> abre_arquivo (Onde, read)
+			end,
+	
+	io:fread(Fonte, "", "~d"),
+	ler_entrada_r (Fonte, []).
+	
+	
+ler_entrada_r (Arq, Lido) ->	
+	case io:fread(Arq, "", "~d~d~d") of
+		{ok, [H1, H2, H3]} 	-> 	Novo = [{H1, H2, H3} | Lido], 
+								ler_entrada_r(Arq, Novo);
+		eof					->	lists:reverse(Lido);
+		{error, Erro}		->  io:format("Erro na leitura da entrada: ~p~n", [Erro]),
+								init:stop()
+	end.	
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                          SAIDA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,29 +215,6 @@ imprime([H|T], Handler) ->
 	{X, Y} = H,
 	io:format(Handler, "~p ~p~n", [X, Y]),
 	imprime(T, Handler).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                         ENTRADA
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-ler_entrada(Onde) ->
-	
-	case Onde of
-		standard_io	->	io:fread("", "~d"),
-						ler_entrada_r(standard_io, []);
-
-		_			->	io:fread(abre_arquivo (Onde, read), "", "~d"),
-						ler_entrada_r (Onde, [])
-	end.
-	
-	
-ler_entrada_r (Arq, Lido) ->	
-	case io:fread(Arq, "", "~d~d~d") of
-		{ok, [H1, H2, H3]} 	-> 	Novo = [{H1, H2, H3} | Lido], 
-								ler_entrada_r(Arq, Novo);
-		eof					->	lists:reverse(Lido)
-	end.	
 
 
 
