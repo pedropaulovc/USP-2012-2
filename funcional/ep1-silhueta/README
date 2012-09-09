@@ -1,0 +1,38 @@
+# MAC0319 - 2012 - PROGRAMAÇÃO FUNCIONAL CONTEMPORÂNEA
+# EP1: A Silhueta de um Conjunto de Edifícios
+
+## Autores
+Pedro Paulo Vezzá Campos - 7538743
+Alessandro Calò          - 4325393
+
+## Compilação
+O programa acompanha um Makefile. Para compilar o EP execute o comando
+''make'' no diretório descompactado.
+
+## Execução
+O programa obedece o formato de execução definido no enunciado do EP. Após 
+compilado, é possível executar
+	erl -noshell -s silhueta main [alg] [arq-entrada] [arq-silhueta] [arq-imagem]
+
+Onde alg, arq-entrada, arq-silhueta e arq-imagem são conforme explicado no
+enunciado.
+
+## Testes
+O funcionamento do programa foi verificado para as entradas fornecidas
+juntamente com o enunciado. O resultado foi idêntico ao gabarito exceto entrada
+grande fornecida. Houve duas divergências no total:
+
+113c113
+Gabarito:  786 111
+---
+Produzido: 786 137
+118c118
+Gabarito:  796 45
+---
+Produzido:  796 54
+
+
+## Documentação do código
+A documentação do código produzido para o EP encontra-se diretamente no arquivo
+silhueta.erl
+
