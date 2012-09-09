@@ -1,9 +1,9 @@
 -module(matrix).
--export([new/2, get/3, set/4, n_rows/1, n_columns/1]).
+-export([new/3, get/3, set/4, n_rows/1, n_columns/1]).
 
 %% Cria uma nova matriz com M linhas e N colunas.
-new(M, N) -> 
-    {M, N, array:new(M * N, {default, a:branco()})}.
+new(M, N, Default) -> 
+    {M, N, array:new(M * N, {default, Default})}.
 
 %% Devolve o valor na linha I e coluna J da matriz.
 get(I, J, {_M, N, A}) ->
