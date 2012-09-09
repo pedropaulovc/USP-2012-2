@@ -44,7 +44,7 @@ function [amp] = calcularAmplitudes(quantR, quantI)
 endfunction
 
 function plotarDominioTempo(sinal, amostragem)
-	tempo = (0 : length(sinal))/amostragem;
+	tempo = (1 : length(sinal))/amostragem;
 	plot(tempo, sinal);
 endfunction
 
@@ -75,8 +75,8 @@ function [eventos] = obterEventos(amplitudes, taxaAmostragem)
 endfunction
 
 function [evento] = buscarEvento(freq)
-	ini = 12;
-	fim = 143;
+	ini = 0;
+	fim = 127;
 	mid = floor((ini + fim) / 2);
 	
 	while(fim - ini > 1)
@@ -125,13 +125,29 @@ function escreverMidi(nomeArquivo, notas, inicio, fim)
 	M(:,1) = 1;         % all in track 1
 	M(:,2) = 1;         % all in channel 1
 	M(:,3) = notas;      % note numbers
-	M(:,4) = 100;       % volume ramp up 80->120
+	M(:,4) = 100;       % volume
 	M(:,5) = inicio;  % note on
 	M(:,6) = fim;   % note off
 
 	midi_new = matrix2midi(M);
 	writemidi(midi_new, nomeArquivo);
 
+endfunction
+
+function [blocos] = descobrirBlocos(sinal, amostragem)
+	segundos = floor(length(sinal) / amostragem);
+	blocos = zeros(1, segundos);
+	
+	atual = 1;
+	for i = 1 : segundos - 1
+		blocos(i) = atual;
+		
+		if(max(sinal(i * amostragem - 100 : i * amostragem + 100)) < 0.01)
+			atual = atual + 1;
+		endif
+	endfor
+	
+	blocos(segundos) = atual;
 endfunction
 
 function executar(nomeArquivo)
@@ -146,35 +162,47 @@ function executar(nomeArquivo)
 		exit();
 	end_try_catch
 	
-	partes = floor(length(y) / tamanhoIntervalo);
+	blocos = descobrirBlocos(y, fs);
+	segundos = floor(length(y) / tamanhoIntervalo);
 	notas = [];
 	inicio = [];
 	fim = [];
-	for i = 0 : partes - 1
+	tmpInicio = [];
+	tmpFim = [];
+	tmpNotas = [];
+	
+	mesmoBloco = false;
+	for i = 0 : segundos - 1
 		x = fft(y(i * tamanhoIntervalo + 1 : (i + 1) * tamanhoIntervalo));
 		
 		amp = calcularAmplitudes(real(x), imag(x));
-%		plotarDominioFrequencias(amp, fs)
-		eventos = obterEventos(amp, fs);
+%		plotarDominioFrequencias(amp, fs);
+%		drawnow;
+%		pause();
+		eventos = obterEventos(amp, fs)
 		
+		mesmoBloco = false;
+		if(i >= 1 && blocos(i) == blocos(i + 1))
+			mesmoBloco = true;
+		endif
 		
-		for evento = eventos
-			atualizou = false;
-			for j =  1: length(notas)
-				if (evento == notas(j) && fim(j) == i)
-					fim(j) = i + 1
-					atualizou = true;
-				endif
-			endfor
+		if(!mesmoBloco)
+			notas = [notas; tmpNotas];
+			inicio = [inicio; tmpInicio];
+			fim = [fim; tmpFim];
 			
-			if(atualizou == false)
-				notas = [notas; evento];
-				inicio = [inicio; i];
-				fim = [fim; i + 1];
-			endif
-		endfor
+			tmpNotas = eventos';
+			tmpInicio = linspace(i, i, length(eventos))';
+			tmpFim = tmpInicio + 1;
+		else
+			tmpFim = tmpFim + 1;
+		endif
 	endfor
 	
+	notas = [notas; eventos']
+	inicio = [inicio; tmpInicio]
+	fim = [fim; tmpFim]
+
 	nomeMidi = strcat(nomeArquivo(1:(length(nomeArquivo) - 3)), "midi");
 	escreverMidi(nomeMidi, notas, inicio, fim);
 endfunction
