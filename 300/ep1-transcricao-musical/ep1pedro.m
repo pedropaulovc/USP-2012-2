@@ -55,14 +55,14 @@ function plotarDominioFrequencias(amplitudes, taxaAmostragem)
 	plot(linspace(1/taxaAmostragem, taxaAmostragem, N), amplitudes);
 endfunction
 
-function [eventos] = obterEventos(amplitudes, taxaAmostragem)
-	media = mean(amplitudes);
+function [resposta] = obterEventos(amplitudes, taxaAmostragem)
+	mediana = median(amplitudes);
 	desvio = std(amplitudes);
 	N = length(amplitudes);
 	
 	frequencias = [];
-	for i = 1:N/2
-		if amplitudes(i) > media + 7 * desvio;
+	for i = 1:N/3
+		if amplitudes(i) > mediana + 3 * desvio;
 			frequencias = [frequencias; i *  taxaAmostragem / N];
 		endif
 	endfor
@@ -70,6 +70,21 @@ function [eventos] = obterEventos(amplitudes, taxaAmostragem)
 	eventos = [];
 	for i = 1:length(frequencias)
 		eventos = union(eventos, buscarEvento(frequencias(i)));
+	endfor
+	
+	contaHarmonicas = zeros(1, 12);
+	for evento = eventos
+		contaHarmonicas(mod(evento, 12) + 1) += 1;
+	endfor
+	
+	[qtd harmonica] = max(contaHarmonicas);
+	harmonica -= 1;
+	
+	resposta = [];
+	for evento = eventos
+		if(mod(evento, 12) == harmonica)
+			resposta = [resposta, evento];
+		endif
 	endfor
 	
 endfunction
@@ -141,8 +156,7 @@ function [blocos] = descobrirBlocos(sinal, amostragem)
 	atual = 1;
 	for i = 1 : segundos - 1
 		blocos(i) = atual;
-		
-		if(max(sinal(i * amostragem - 100 : i * amostragem + 100)) < 0.01)
+		if(abs(max(sinal(i * amostragem - 100 : i * amostragem + 100))) < 0.05)
 			atual = atual + 1;
 		endif
 	endfor
@@ -150,7 +164,7 @@ function [blocos] = descobrirBlocos(sinal, amostragem)
 	blocos(segundos) = atual;
 endfunction
 
-function executar(nomeArquivo)
+function [resultado] executar(nomeArquivo)
 	# Decodificar as informações contidas no arquivo WAV;
 	
 	tamanhoIntervalo = 44100;
@@ -176,10 +190,10 @@ function executar(nomeArquivo)
 		x = fft(y(i * tamanhoIntervalo + 1 : (i + 1) * tamanhoIntervalo));
 		
 		amp = calcularAmplitudes(real(x), imag(x));
+		eventos = obterEventos(amp, fs);
 %		plotarDominioFrequencias(amp, fs);
 %		drawnow;
-%		pause();
-		eventos = obterEventos(amp, fs)
+%		pause();		
 		
 		mesmoBloco = false;
 		if(i >= 1 && blocos(i) == blocos(i + 1))
@@ -199,12 +213,22 @@ function executar(nomeArquivo)
 		endif
 	endfor
 	
-	notas = [notas; eventos']
-	inicio = [inicio; tmpInicio]
-	fim = [fim; tmpFim]
+	notas = [notas; eventos'];
+	inicio = [inicio; tmpInicio];
+	fim = [fim; tmpFim];
 
+	resultado = [notas, inicio, fim]';
+	
 	nomeMidi = strcat(nomeArquivo(1:(length(nomeArquivo) - 3)), "midi");
 	escreverMidi(nomeMidi, notas, inicio, fim);
+endfunction
+
+function testar()
+	wavs = dir ("*.wav");
+	for i = 1:length(wavs)
+		wavs(i).name
+		executar(wavs(i).name)
+	endfor
 endfunction
 
 if(nargin < 1)
