@@ -84,50 +84,74 @@ executa_algoritmo (Alg, Entrada) ->
 %                      UNIAO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% as duas listas foram percorridas totalmente. Basta retornar a lista S em ordem inversa.
+une ([], [], _A1, _A2, S)	->	lists:reverse (S);
+
+% a lista 2 foi percorrida totalmente. Basta retornar S invertida, e adicionar L1 ao final desta.
+une (L1, [], _A1, _A2, S)	->	lists:reverse (S, L1);
+
+% a lista 1 foi percorrida totalmente. Basta retornar S invertida, e adicionar L2 ao final desta.
+une ([], L2, _A1, _A2, S)	->	lists:reverse (S, L2);
+
+% caso generico: as duas silhuetas contem pelo menos um elemento cada.
+% A1 e A2 sao as alturas atuais das 2 silhuetas, e S eh a silhueta resultante.
+une (L1, L2, A1, A2, S)	->	
+	[{X1, Y1} | T1] = L1,
+	[{X2, Y2} | T2] = L2,
+	case X1 < X2 of
+		% X1 < X2
+		true	->	case Y1 > A2 of
+						% a altura de X1 eh maior que a da outra silhueta, 
+						% portanto deve ser considerada
+						% Obs: adicionamos a nova tupla NO INICIO da lista, 
+						% por isso nas clausulas acima ela deve ser invertida.
+						true	->	une (T1, L2, Y1, A2, [{X1, Y1}|S]);
+						% a altura de X2 nao eh maior que a da outra silhueta, 
+						% entao nao deve ser considerada
+						false	->	une (T1, L2, Y1, A2, [{X1, A2}|S])
+					end;
+		% X1 > X2 OU X1 =:= X2
+		false	->	case X1 > X2 of
+						% X1 > X2
+						true	->	case Y2 > A1 of
+										% a altura de X2 eh maior que a da outra silhueta, 
+										% portanto deve ser considerada
+										true	->	une (L1, T2, A1, Y2, [{X2, Y2}|S]);
+										% a altura de X2 nao eh maior que a da outra silhueta, 
+										% portanto nao deve ser considerada
+										false	->	une (L1, T2, A1, Y2, [{X2, A1}|S])
+									end;
+						% X1 =:= X2
+						% Aqui, basta incluir a tupla {Xi, max(Y1, Y2)} na silhueta final, 
+						% onde i pode ser 1 ou 2, tanto faz.
+						false	->	case Y1 > Y2 of
+										% max = Y1
+										true	->	une (T1, T2, Y1, Y2, [{X1, Y1}|S]);
+										% max = Y2
+										false	->	une (T1, T2, Y1, Y2, [{X2, Y2}|S])
+									end
+					end
+	end.
+
+
 % Função obrigatória uniao(ListaDePares1, ListaDePares2) -> ListaDePares3:
-% Recebe duas silhuetas, determina a união dessas silhuetas e a devolve como
-% valor da função. Faz uso da função auxiliar une/5 para calcular o resultado.
-uniao(L1, L2) -> une(L1, L2, 0, 0, []).
-
-% une/5 possui a assinatura une(ListaDePares1, ListaDePares2, Alt1, Alt2, Resp)
-% onde:
-% 	- ListaDePares1 e ListaDePares2 são as silhuetas a serem unidas
-% 	- Alt1 e Alt2 são as alturas dos últimos elementos removidos da silhueta
-% 	- Resp é a silhueta resultado produzida até o momento.
-
-%Encerramos o processamento
-une([], [], _, _, Resp) -> lists:reverse(Resp);
+% a funcao uniao/2 chama a funcao auxiliar une/5, que realiza a mesma tarefa.
+% a funcao remove/2, que age sobre o resultado de une/5, remove desta lista as tuplas redundantes.
+uniao (L1, L2) -> remove (une (L1, L2, 0, 0, []), []).
 
 
-une([{X1, A1}], [], _, Alt2, [{X, _}|T]) when (X == X1) ->
-	une([], [], A1, Alt2, [{X1, A1}|T]);
+% se a lista for vazia, nao há nada a remover
+remove ( [], _Res)						->	[];
 
-%A união recebe a maior altura entre a própria união e os parâmetros
-une([{X1, A1}|T1], L2, _, Alt2, [{X, A}|T]) when (X == X1) ->
-	if
-		(A1 > A) -> une(T1, L2, A1, Alt2, [{X, A1}|T]);
-		true     -> une(T1, L2, A1, Alt2, [{X, A}|T])
-	end;
+%se existir só um elemento (uma tupla) restante na silhueta, ele certamente não será redundante
+remove ( [{X, Y}], Res)					->	lists:reverse (Res, [{X, Y}]);
 
-%Casos triviais, união de uma silhueta com outra vazia.
-une([], L, Alt1, Alt2, Resp) -> une(L, [], Alt2, Alt1, Resp);
-une([{X1,A1}|T], [], Alt1, Alt2, Resp) -> une(T, [], Alt1, Alt2, [{X1,A1}|Resp]);
-
-%Se a silhueta 2 começa antes, invertemos as duas.
-une([{X1, A1}|T1], [{X2, A2}|T2], Alt1, Alt2, Resp) when (X1 > X2) ->
-	une([{X2, A2}|T2], [{X1, A1}|T1], Alt2, Alt1, Resp);
-
-%Neste ponto, a silhueta 1 começa antes da 2 e em um ponto mais à direita que
-%o último ponto calculado da união.
-une([{X1, A1}|T1], [{X2, A2}|T2], Alt1, Alt2, Resp) ->
-	Novo = if 
-		(A1 =< Alt2) and (Alt1 =< Alt2) -> Resp;
-		(A1 =< Alt2) and (Alt1 >  Alt2) -> [{X1,Alt2}|Resp];
-		(A1  > Alt2) and (Alt1 <  Alt2) -> [{X1,A1}|Resp];
-		(A1  > Alt2) and (Alt1 >= Alt2) -> [{X1,A1}|Resp]
-	end,
-	
-	une(T1, [{X2, A2}|T2], A1, Alt2, Novo).
+% se existirem 2 ou mais elementos restantes na silhueta, faz-se a comparacao entre os 2 primeiros,
+% e se o primeiro for redundante, ele nao eh incluido na silhueta final (Res)
+remove ( [{X1, Y1}, {X2, Y2}|T], Res)	->	case Y1 =:= Y2 of
+												true	->	remove ([{X1, Y1}|T], Res);
+												false	->	remove ([{X2, Y2}|T], [{X1, Y1} | Res])
+											end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                      UTILITARIOS

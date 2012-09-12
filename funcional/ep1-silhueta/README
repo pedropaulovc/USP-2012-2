@@ -19,18 +19,7 @@ enunciado.
 
 ## Testes
 O funcionamento do programa foi verificado para as entradas fornecidas
-juntamente com o enunciado. O resultado foi idêntico ao gabarito exceto entrada
-grande fornecida. Houve duas divergências no total:
-
-113c113
-Gabarito:  786 111
----
-Produzido: 786 137
-118c118
-Gabarito:  796 45
----
-Produzido:  796 54
-
+juntamente com o enunciado para todos os algoritmos implementados.
 
 ## Documentação do código
 A documentação do código produzido para o EP encontra-se diretamente no arquivo
