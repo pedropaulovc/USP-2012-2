@@ -25,7 +25,9 @@
 
 #define LISTENQ 1
 #define MAXDATASIZE 100
-#define MAXLINE 4096
+#ifndef MAXLINE
+#define MAXLINE 4095
+#endif
 
 
 #endif

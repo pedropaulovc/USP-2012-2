@@ -1,39 +1,50 @@
 #include "servidor_gerente.h"
 
-int processar_mensagem(char *linha){
+map<string, int> nicks_socket;
+
+string processar_mensagem(char *linha){
 	char *resto = NULL;
 	char *token;
 	char *ptr = linha;
 	
+	string msg_encaminhada = "MSG ";
+	msg_encaminhada += string(linha);
+	msg_encaminhada += "\r\n";
+	
 	token = strtok_r(ptr, " ", &resto);
+	
 	if(!token)
-		return REQ_INCOMPLETA;
+		return "ERRO_REQ_INCOMPLETA";
+	
+	string id = string(token);
+	
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
 	
 	string origem = string(token);
-	
-	if(nicks.find(origem) == nicks.end())
-		return NICK_ORIGEM_DESCONHECIDO;
+
+	if(nicks_socket.find(origem) == nicks_socket.end())
+		return "ERRO_NICK_ORIGEM_DESCONHECIDO";
 		
 	ptr = resto;
 	token = strtok_r(ptr, " ", &resto);
 	
 	if(!token)
-		return REQ_INCOMPLETA;
+		return "REQ_INCOMPLETA";
 	
 	string destino = string(token);
 	
-	if(nicks.find(destino) == nicks.end())
-		return NICK_DESTINO_DESCONHECIDO;
+	if(nicks_socket.find(destino) == nicks_socket.end())
+		return "NICK_DESTINO_DESCONHECIDO";
 	
-	ptr = resto;
-	token = strtok_r(ptr, " ", &resto);
+	string mensagem = string(resto);	
 	
-	if(!token)
-		return REQ_INCOMPLETA;
+	write(nicks_socket[destino], msg_encaminhada.c_str(), msg_encaminhada.size());
 
-	string mensagem = string(token);	
+	printf("[%d: Mensagem id '%s' de '%s' para '%s' conteudo '%s']\n", getpid(), 
+		id.c_str(), origem.c_str(), destino.c_str(), mensagem.c_str());
 	
-	return ENV_OK;
+	return "MSG_OK " + id;
 }
 
 void processar_requisicao(int socket){
@@ -45,55 +56,46 @@ void processar_requisicao(int socket){
 
 	int lido = read(socket, buffer, MAXLINE);
 	buffer[lido] = '\0';
+	
 	for(int i = 0; i < lido; i++)
 		if(buffer[i] == '\n' || buffer[i] == '\r')
 			buffer[i] = '\0';
-	
+
 	printf("%d: Recebeu %s\n", getpid(), buffer);
 	
 	token = strtok_r(ptr, " ", &resto);
 	if(!token)
 		return;
 
-	if(strcmp(token, "CAD") == 0){
+	if(strcmp(token, "CON") == 0){
 		ptr = resto;
 		token = strtok_r(ptr, " ", &resto);
 		if(!token)
 			resposta = "ERRO_REQ_INCOMPLETA";
-		else if(nicks.find(string(token)) != nicks.end())
-			resposta = "CAD_NEG";
+		else if(nicks_socket.find(string(token)) != nicks_socket.end())
+			resposta = "CON_NEG";
 		else {
-			nicks.insert(string(token));
-			resposta = "CAD_OK";
+			nicks_socket[string(token)] = socket;
+			resposta = "CON_OK";
 		}
 		
 	} else if (strcmp(token, "LIST") == 0){
-		 for (set<string>::iterator it = nicks.begin(); it != nicks.end(); it++)
-		 	resposta += *it + " ";
+		map<string, int>::iterator it;
+		 for (it = nicks_socket.begin(); it != nicks_socket.end(); it++)
+		 	resposta += (*it).first + " ";
 		 	
-	} else if (strcmp(token, "ENV") == 0){
-		ptr = resto;
-		token = strtok_r(ptr, " ", &resto);
-		
-		int resultado = processar_mensagem(token);
-		if(resultado == REQ_INCOMPLETA)
-			resposta = "ERRO_REQ_INCOMPLETA";
-		else if(resultado == NICK_ORIGEM_DESCONHECIDO)
-			resposta = "ERRO_NICK_ORIGEM_DESCONHECIDO";
-		else if(resultado == NICK_DESTINO_DESCONHECIDO)
-			resposta = "ERRO_NICK_DESTINO_DESCONHECIDO";
-		else
-			resposta = "ENV_OK";
+	} else if (strcmp(token, "MSG") == 0){
+		resposta = processar_mensagem(resto);
 	
 	} else if (strcmp(token, "FIM") == 0) {
 		ptr = resto;
 		token = strtok_r(ptr, " ", &resto);
 		if(!token)
 			resposta = "ERRO_REQ_INCOMPLETA";
-		else if(nicks.find(string(token)) == nicks.end())
+		else if(nicks_socket.find(string(token)) == nicks_socket.end())
 			resposta = "ERRO_NICK_DESCONHECIDO";
 		else {
-			nicks.erase(string(token));
+			nicks_socket.erase(string(token));
 			resposta = "FIM_OK";
 		}
 		
@@ -101,16 +103,15 @@ void processar_requisicao(int socket){
 		resposta = "ERRO_REQ_DESCONHECIDA";
 	}
 	
-	printf("%d: Respondeu %s\n", getpid(), resposta.c_str());
+	resposta += "\r\n";
+	printf("%d: Respondeu %s", getpid(), resposta.c_str());
 	write(socket, resposta.c_str(), resposta.size());
 }
 
 /*
-• Cliente envia uma mensagem para um nick espec ́fico; ı
-• Cliente solicita a desconexao;
-• Cliente solicita o envio de um arquivo binario para um nick especifico;
-• Servidor confirma que o nick aceitou o envio do arquivo e permite uma conexao TCP direta entre
-  os usuarios para o envio deste arquivo.
+• Cliente solicita o MSGio de um arquivo binario para um nick especifico;
+• Servidor confirma que o nick aceitou o MSGio do arquivo e permite uma conexao TCP direta entre
+  os usuarios para o MSGio deste arquivo.
 */
 void executar_gerente(int porta){
 	struct pollfd fds[2];
