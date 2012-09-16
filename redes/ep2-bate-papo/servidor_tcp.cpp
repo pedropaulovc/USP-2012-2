@@ -3,7 +3,7 @@
 //Código adaptado de http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/index.jsp?topic=/rzab6/example.htm
 
 bool tratar_requisicao(int fd){
-	bool   close_conn;
+	bool   close_conn = false;
 	char   buffer[MAXLINE + 1];
 	int    len, rc;
 
@@ -15,10 +15,11 @@ bool tratar_requisicao(int fd){
       /* failure occurs, we will close the                 */
       /* connection.                                       */
       /*****************************************************/
+      
       rc = recv(fd, buffer, sizeof(buffer), 0);
       if (rc < 0)
       {
-        if (errno != EWOULDBLOCK)
+        if (!(errno == EWOULDBLOCK || errno == EAGAIN))
         {
           perror("  recv() failed");
           close_conn = true;
@@ -55,6 +56,8 @@ bool tratar_requisicao(int fd){
       }
 
     } while(true);
+	
+	
 	
 	return close_conn;
 }
@@ -98,6 +101,7 @@ void iniciar_servidor_tcp (int porta) {
 
   flags = fcntl(listen_sd, F_GETFL, 0);
   rc = fcntl(listen_sd, F_SETFL, flags | O_NONBLOCK);
+
   if (rc < 0)
   {
     perror("ioctl() failed");
@@ -215,7 +219,7 @@ void iniciar_servidor_tcp (int porta) {
           new_sd = accept(listen_sd, NULL, NULL);
           if (new_sd < 0)
           {
-            if (errno != EWOULDBLOCK)
+            if (!(errno == EWOULDBLOCK || errno == EAGAIN))
             {
               perror("  accept() failed");
               end_server = true;
@@ -230,6 +234,8 @@ void iniciar_servidor_tcp (int porta) {
           printf("  New incoming connection - %d\n", new_sd);
           fds[nfds].fd = new_sd;
           fds[nfds].events = POLLIN;
+          flags = fcntl(new_sd, F_GETFL, 0);
+          rc = fcntl(new_sd, F_SETFL, flags | O_NONBLOCK);
           nfds++;
 
           /*****************************************************/
