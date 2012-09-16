@@ -10,34 +10,20 @@
 
 1;
 
-function [U, V] = montarMatrizDft(N)
-	U = zeros(N, N); #Parte real da DFT
-	V = zeros(N, N); #Parte imaginária da DFT
-	
-	raizN = sqrt(N);
-	for m = 0 : N - 1
-		for n = 0: N - 1
-			w = -(2 * pi * m * n)/N;
-			U(m + 1, n + 1) = cos(w)/raizN;
-			V(m + 1, n + 1) = -sin(w)/raizN;
-		endfor
+function [dft, tempo] = calcularDft(x)
+	u = zeros(1, length(x));
+	dft = zeros(length(x), 1);
+	tempo = 0;
+
+	for i = 1 : length(x)
+		u(i) = 1;
+		w = fft(u);
+		u(i) = 0;
+		tic()
+		dft(i) = w * x;
+		tempo += toc();
 	endfor
 endfunction
-
-function [U, V] = calcularDft(x)
-	N = length(x);
-	U = zeros(N, 1);
-	V = zeros(N, 1);
-	
-	for m = 0 : N - 1
-		for n = 0 : N - 1
-			w = -(2 * pi * m * n)/N;
-			U += x(n + 1) * cos(w);
-			V += x(n + 1) * sin(w);
-		endfor
-	endfor
-endfunction
-
 
 function [amp] = calcularAmplitudes(quantR, quantI)
 	amp = hypot(quantR, quantI);
