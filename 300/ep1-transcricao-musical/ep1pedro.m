@@ -41,7 +41,7 @@ function plotarDominioFrequencias(amplitudes, taxaAmostragem)
 	plot(linspace(1/taxaAmostragem, taxaAmostragem, N), amplitudes);
 endfunction
 
-function [resposta] = obterEventos(amplitudes, taxaAmostragem)
+function [fundamental] = obterFundamental(amplitudes, taxaAmostragem)
 	mediana = median(amplitudes);
 	desvio = std(amplitudes);
 	N = length(amplitudes);
@@ -59,17 +59,26 @@ function [resposta] = obterEventos(amplitudes, taxaAmostragem)
 	endfor
 	
 	contaHarmonicas = zeros(1, 12);
+	acumulaAmplitudes = zeros(1, 12);
 	for evento = eventos
 		contaHarmonicas(mod(evento, 12) + 1) += 1;
+		acumulaAmplitudes(mod(evento, 12) + 1) += amplitudes(floor(obterFrequencia(evento) * N / taxaAmostragem));
 	endfor
 	
-	[qtd harmonica] = max(contaHarmonicas);
+	harmonica = 1;
+	for i = 1 : 12
+		if( ( contaHarmonicas(i) > contaHarmonicas(harmonica) ) ||
+			( contaHarmonicas(i) == contaHarmonicas(harmonica) && acumulaAmplitudes(i) > acumulaAmplitudes(harmonica) )
+		)
+			harmonica = i;
+		endif
+	endfor
 	harmonica -= 1;
 	
-	resposta = [];
 	for evento = eventos
 		if(mod(evento, 12) == harmonica)
-			resposta = [resposta, evento];
+			fundamental = evento;
+			return;
 		endif
 	endfor
 	
@@ -150,7 +159,7 @@ function [blocos] = descobrirBlocos(sinal, amostragem)
 	blocos(segundos) = atual;
 endfunction
 
-function [resultado] executar(nomeArquivo)
+function [resultado] = executar(nomeArquivo)
 	# Decodificar as informações contidas no arquivo WAV;
 	
 	tamanhoIntervalo = 44100;
@@ -176,10 +185,10 @@ function [resultado] executar(nomeArquivo)
 		x = fft(y(i * tamanhoIntervalo + 1 : (i + 1) * tamanhoIntervalo));
 		
 		amp = calcularAmplitudes(real(x), imag(x));
-		eventos = obterEventos(amp, fs);
-%		plotarDominioFrequencias(amp, fs);
-%		drawnow;
-%		pause();		
+		eventos = obterFundamental(amp, fs);
+		%plotarDominioFrequencias(amp, fs);
+		%drawnow;
+		%pause();		
 		
 		mesmoBloco = false;
 		if(i >= 1 && blocos(i) == blocos(i + 1))
