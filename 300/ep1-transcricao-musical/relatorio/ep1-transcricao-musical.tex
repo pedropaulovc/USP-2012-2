@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \makeatletter
 \usepackage{babel}
 \makeatother
@@ -65,7 +66,7 @@ e Estatística \par Universidade de São Paulo}
 	A Transformada de Fourier é uma operação matemática responsável por expressar uma função de domínio o tempo (Segundos, por exemplo) como uma função de domínio na frequência (Hertz, por exemplo). Sua função é decompor um sinal em suas componentes elementares, seno e cosseno [2].
 
 	\subsection*{Transformada Contínua de Fourier}
-		A Transformada de Fourier $\hat{f}$ de uma função integrável $f: R \arrow C$ é definida como [3]:
+		A Transformada de Fourier $\hat{f}$ de uma função integrável $f: R \rightarrow C$ é definida como [3]:
 
 		$$\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\ e^{- 2\pi i x \xi}\,dx$$, para todo número real $\xi$.
 
@@ -124,9 +125,9 @@ e Estatística \par Universidade de São Paulo}
 \section*{Conclusão}
 	O trabalho ajudou a fixar os conceitos vistos em aula, além de nos fazer entrar em contato com uma área não habitualmente abordada na graduação, Processamento de Sinais. Os alunos tiveram um contato prático com os conceitos, com a teoria relacionada sendo estudada à medida que havia necessidade de interpretar os resultados obtidos. Isso permitiu acumular diversos conhecimentos úteis enquanto resolve-se um problema real na área de Computação Musical. Ainda, a possibilidade de utilizar uma linguagem voltada pra processamentos matemáticos, tal como Octave, a escolhida para este trabalho, simplificou problemas de implementação, permitindo aos alunos focarem nos algoritmos propriamente ditos. Vencida a dificuldade com o entendimento do problema a ser resolvido e questões de representação de números de ponto flutuante e complexos o EP foi bastante interessante de ser implementado.
 	
-[2] www.dsc.ufcg.edu.br/~pet/ciclo_seminarios/tecnicos/2010/TransformadaDeFourier.pdf
-[3] http://en.wikipedia.org/wiki/Fourier_transform
-[4] http://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
+%[2] www.dsc.ufcg.edu.br/~pet/ciclo_seminarios/tecnicos/2010/TransformadaDeFourier.pdf
+%[3] http://en.wikipedia.org/wiki/Fourier_transform
+%[4] http://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
 %\nocite{*}
 %\bibliographystyle{abnt-num}
 %\bibliography{bibliografia}
