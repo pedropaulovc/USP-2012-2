@@ -1,0 +1,64 @@
+\documentclass[brazil,times]{abnt}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{amssymb}
+\makeatletter
+\usepackage{babel}
+\makeatother
+
+\begin{document}
+
+
+\autor{Pedro Paulo Vezzá Campos - 7538743}
+
+\titulo{Transcrição Automática de Música Monofônica}
+
+\comentario{Primeiro exercício-programa apresentado para avaliação na disciplina
+MAC0300, do curso de Bacharelado em Ciência da Computação, turma 45, da
+Universidade de São Paulo, ministrada pelo professor Walter Figueiredo Mascarenhas.}
+
+\instituicao{Departamento de Ciência da Computação \par Instituto de Matemática
+e Estatística \par Universidade de São Paulo}
+
+\local{São Paulo - SP, Brasil}
+
+\data{\today}
+
+\capa
+
+\folhaderosto
+
+%\tableofcontents
+
+\section*{Introdução\label{cap:introducao}}
+Neste primeiro exercício-programa de MAC0300 - Métodos Numéricos da Álgebra Linear foi pedido que implementássemos um programa que fosse capaz de realizar a transcrição automática de músicas simples, ou seja, transformar um arquivo WAV contendo sons monofônicos em um arquivo MIDI equivalente. Neste relatório serão apresentados: Uma explicação da modelagem de sons utilizando Séries de Fourier, explicações sobre a Transformada de Fourier e suas duas principais implementações (DFT e FFT), uma análise dos resultados obtidos com o programa em termos das Transformadas utilizadas e do tempo de execução, por fim, será feita apresentada uma conclusão sobre o EP.
+
+% Explique sucintamente a modelagem de um som usando Série de Fourier;
+\section*{Modelagem de som usando Séries de Fourier}
+
+% Explique como a Transformada de Fourier fornece informações para a transcrição musical feita em seu programa;
+\section*{Transformada de Fourier na transcrição musical}
+
+% Descreva vantagens e desvantagens entre os métodos Multiplicação pela Matriz de Fourier e FFT.
+\section*{Métodos para implementar a Transformada de Fourier}
+
+% Mostre os gráficos das ondas de áudio no domínio do tempo e no domínio da frequência (frequência no eixo das abscissas e amplitude em decibéis no eixo das ordenadas). Mostre os espectros obtidos para ambos os métodos.
+\subsection*{Análise dos resultados do programa}
+
+% Faça a comparação do tempo de execução dos dois métodos de cálculo da Transformada Discreta de Fourier: Multiplicação pela Matriz de Fourier e FFT. Mostre dois gráficos comparativos com os tempos médios dos métodos para o mesmo número de execuções. Tome o cuidado de não incluir o tempo de criação da matriz DFT no método da multiplicação.
+\subsection*{Análise dos tempos de execução do programa}
+
+
+
+\section*{Conclusão}
+	O trabalho ajudou a fixar os conceitos vistos em aula, além de nos fazer entrar em contato com uma área não habitualmente abordada na graduação, Processamento de Sinais. Os alunos tiveram um contato prático com os conceitos, com a teoria relacionada sendo estudada à medida que havia necessidade de interpretar os resultados obtidos. Isso permitiu acumular diversos conhecimentos úteis enquanto resolve-se um problema real na área de Computação Musical. Ainda, a possibilidade de utilizar uma linguagem voltada pra processamentos matemáticos, tal como Octave, a escolhida para este trabalho, simplificou problemas de implementação, permitindo aos alunos focarem nos algoritmos propriamente ditos. Vencida a dificuldade com o entendimento do problema a ser resolvido e questões de representação de números de ponto flutuante e complexos o EP foi bastante interessante de ser implementado.
+	
+%\nocite{*}
+%\bibliographystyle{abnt-num}
+%\bibliography{bibliografia}
+\end{document}
+
+\end{document}
