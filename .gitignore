@@ -4,3 +4,13 @@
 *.metadata
 *.class
 octave-core
+*.bbl
+*.aux
+*.out
+*.log
+*.toc
+*.blg
+.nfs*
+*.bst
+*.cls
+*.def
