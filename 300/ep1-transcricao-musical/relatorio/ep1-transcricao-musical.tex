@@ -34,28 +34,99 @@ e Estatística \par Universidade de São Paulo}
 %\tableofcontents
 
 \section*{Introdução\label{cap:introducao}}
-Neste primeiro exercício-programa de MAC0300 - Métodos Numéricos da Álgebra Linear foi pedido que implementássemos um programa que fosse capaz de realizar a transcrição automática de músicas simples, ou seja, transformar um arquivo WAV contendo sons monofônicos em um arquivo MIDI equivalente. Neste relatório serão apresentados: Uma explicação da modelagem de sons utilizando Séries de Fourier, explicações sobre a Transformada de Fourier e suas duas principais implementações (DFT e FFT), uma análise dos resultados obtidos com o programa em termos das Transformadas utilizadas e do tempo de execução, por fim, será feita apresentada uma conclusão sobre o EP.
+	Neste primeiro exercício-programa de MAC0300 - Métodos Numéricos da Álgebra Linear foi pedido que implementássemos um programa que fosse capaz de realizar a transcrição automática de músicas simples, ou seja, transformar um arquivo WAV contendo sons monofônicos em um arquivo MIDI equivalente. Neste relatório serão apresentados: Uma explicação da modelagem de sons utilizando Séries de Fourier, explicações sobre a Transformada de Fourier e suas duas principais implementações (DFT e FFT), uma análise dos resultados obtidos com o programa em termos das Transformadas utilizadas e do tempo de execução, por fim, será feita apresentada uma conclusão sobre o EP.
 
 % Explique sucintamente a modelagem de um som usando Série de Fourier;
 \section*{Modelagem de som usando Séries de Fourier}
+	Jean Baptiste Fourier (1768–1830) demonstrou que toda onda periódia pode ser expressa como uma soma infinita de ondas senoidais de amplitudes variadas. As frequências de tais senoides devem ser múltiplas inteiras de alguma frequência fundamental. A esta soma infinita dá-se o nome de Série de Fourier. Mais formalmente, tomemos $f(x)$ periódica, ou seja:
+
+
+	$$f(t + 2L) = f(t), \quad c \le t \le c + 2L$$
+
+	Então:
+
+	$$f(t) = \frac{a_0}{2} + \sum_{n=1}^{\infty}\left[a_n\cdot\cos\left(\frac{n \pi t}{L}\right) + b_n \cdot \operatorname{sen}\left(\frac{n \pi t}{L}\right)\right]$$
+
+	onde:
+
+	$$a_0=\frac{1}{L} \int_{c}^{c+2L} f(t)\,dt$$
+
+	$$a_n=\frac{1}{L} \int_{c}^{c+2L} f(t) \cos\left(\frac{n \pi t}{L}\right)\,dt$$
+
+	$$b_n=\frac{1}{L} \int_{c}^{c+2L} f(t) \,\operatorname{sen}\left(\frac{n \pi t}{L}\right)\,dt$$
+
+
+
+\section*{Métodos para implementar a Transformada de Fourier}
+
+
+
+\section*{Transformada de Fourier}
+	A Transformada de Fourier é uma operação matemática responsável por expressar uma função de domínio o tempo (Segundos, por exemplo) como uma função de domínio na frequência (Hertz, por exemplo). Sua função é decompor um sinal em suas componentes elementares, seno e cosseno [2].
+
+	\subsection*{Transformada Contínua de Fourier}
+		A Transformada de Fourier $\hat{f}$ de uma função integrável $f: R \arrow C$ é definida como [3]:
+
+		$$\hat{f}(\xi) = \int_{-\infty}^{\infty} f(x)\ e^{- 2\pi i x \xi}\,dx$$, para todo número real $\xi$.
+
+		Se a variável independente $x$ representa uma unidade de tempo, a variável da transformada $\xi$ representa uma unidade de frequência. 
+
+	\subsection*{Transformada Discreta de Fourier (DFT)}
+		Caso a função a ser transformada seja discreta e de duração finita (Ou periódica) é possível deduzir uma versão discreta da Transformada de Fourier:
+
+		$$X_k = \sum_{n=0}^{N-1} x_n \cdot e^{-i 2 \pi \frac{k}{N} n}.$$
+
+
+	% Descreva vantagens e desvantagens entre os métodos Multiplicação pela Matriz de Fourier e FFT.
+	\subsection*{Implementação computacional}
+		Em computadores o processamento de sinais contínuos não é possível, uma vez que seriam necessários infinitas senoides para representar exatamente o sinal. Sendo assim, procede-se com a amostragem de sinais no tempo e utiliza-se a DFT para realizar a transformação do sinal amostrado.
+
+		\subsubsection*{Matriz DFT}
+			A implementação "ingênua" da DFT é realizada através do produto
+
+			$$ T = Fx$$
+
+			onde $T$ é a transformada do sinal $x$ e $F$ é matriz:
+
+			$$
+			\mathbf{F} =
+			\begin{bmatrix}
+				\omega_N^{0 \cdot 0}     & \omega_N^{0 \cdot 1}     & \ldots & \omega_N^{0 \cdot (N-1)}     \\
+				\omega_N^{1 \cdot 0}     & \omega_N^{1 \cdot 1}     & \ldots & \omega_N^{1 \cdot (N-1)}     \\
+				\vdots                   & \vdots                   & \ddots & \vdots                       \\
+				\omega_N^{(N-1) \cdot 0} & \omega_N^{(N-1) \cdot 1} & \ldots & \omega_N^{(N-1) \cdot (N-1)} \\
+			\end{bmatrix}
+			$$
+
+			$$\omega_N = e^{-2 \pi i/N}\,$$
+
+			A complexidade do produto descrito é dado por $O(|x|^2)$
+
+		\subsubsection*{Transformada Rápida de Fourier}
+			Gauss desenvolveu um método para calcular a DFT que utiliza $O(|x|\log(|x|))$ operações. Tal algoritmo permaneceu esquecido por 160 anos até que Cooley e Tuckey o redescobriram em 1965. Sua implementação utiliza uma estratégia de divisão-e-conquista para evitar cálculos desnecessários na DFT. O algoritmo pode ser visto em [4]
+
 
 % Explique como a Transformada de Fourier fornece informações para a transcrição musical feita em seu programa;
 \section*{Transformada de Fourier na transcrição musical}
+	O som pode ser simplificado como um sinal contínuo composto por uma ou mais senoides de diferentes frequências e amplitudes. Sendo assim, é passível de ser mapeado em seu respectivo espectro de frequências através da Transformada de Fourier.
 
-% Descreva vantagens e desvantagens entre os métodos Multiplicação pela Matriz de Fourier e FFT.
-\section*{Métodos para implementar a Transformada de Fourier}
+
+
 
 % Mostre os gráficos das ondas de áudio no domínio do tempo e no domínio da frequência (frequência no eixo das abscissas e amplitude em decibéis no eixo das ordenadas). Mostre os espectros obtidos para ambos os métodos.
-\subsection*{Análise dos resultados do programa}
+\section*{Análise dos resultados do programa}
 
 % Faça a comparação do tempo de execução dos dois métodos de cálculo da Transformada Discreta de Fourier: Multiplicação pela Matriz de Fourier e FFT. Mostre dois gráficos comparativos com os tempos médios dos métodos para o mesmo número de execuções. Tome o cuidado de não incluir o tempo de criação da matriz DFT no método da multiplicação.
-\subsection*{Análise dos tempos de execução do programa}
+\section*{Análise dos tempos de execução do programa}
 
 
 
 \section*{Conclusão}
 	O trabalho ajudou a fixar os conceitos vistos em aula, além de nos fazer entrar em contato com uma área não habitualmente abordada na graduação, Processamento de Sinais. Os alunos tiveram um contato prático com os conceitos, com a teoria relacionada sendo estudada à medida que havia necessidade de interpretar os resultados obtidos. Isso permitiu acumular diversos conhecimentos úteis enquanto resolve-se um problema real na área de Computação Musical. Ainda, a possibilidade de utilizar uma linguagem voltada pra processamentos matemáticos, tal como Octave, a escolhida para este trabalho, simplificou problemas de implementação, permitindo aos alunos focarem nos algoritmos propriamente ditos. Vencida a dificuldade com o entendimento do problema a ser resolvido e questões de representação de números de ponto flutuante e complexos o EP foi bastante interessante de ser implementado.
 	
+[2] www.dsc.ufcg.edu.br/~pet/ciclo_seminarios/tecnicos/2010/TransformadaDeFourier.pdf
+[3] http://en.wikipedia.org/wiki/Fourier_transform
+[4] http://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
 %\nocite{*}
 %\bibliographystyle{abnt-num}
 %\bibliography{bibliografia}
