@@ -1,8 +1,24 @@
 #! /usr/bin/octave -qf
 
+## MAC0300 - 2012 - MÉTODOS NUMÉROCOS DA ÁLGEBRA LINEAR
+## EP1 - TRANSCRIÇÃO AUTOMÁTICA DE MÚSICA MONOFÔNICA
+##
+## ALUNO: PEDRO PAULO VEZZÁ CAMPOS - 7538743
+##
+## Neste arquivo está implementado o código da que permite converter um arquivo
+## .wav em um correspondente .midi conforme as especificações do EP. Função
+## principal: executa().
+
 
 1;
 
+#Responsável por calcular a Transformada Discreta de Fourier utilizando o método
+#da matriz DFT.
+#Retorno: 
+# dft = Resultado da transformada
+# tempo = tempo necessário para calcular a transformada
+#Parâmetros:
+# - x: O vetor com amostras a ter a transformada calculada.
 function [dft, tempo] = dft(x)
 	u = zeros(1, length(x));
 	dft = zeros(length(x), 1);
@@ -18,10 +34,23 @@ function [dft, tempo] = dft(x)
 	endfor
 endfunction
 
+#Responsável por calcular as amplitudes de um espectro dado
+#Retorno: 
+# amp = o vetor de amplitudes
+#Parâmetros:
+# - espectro: O vetor contendo o espectro vindo da transformada de fourier
 function [amp] = calcular_amplitudes(espectro)
 	amp = abs(espectro);
 endfunction
 
+#Responsável por plotar um sinal dado (.wav) no tempo
+#Retorno: 
+# nenhum
+#Parâmetros:
+# - sinal: o sinal a ser plotado
+# - tx_amostragem: a taxa de amostragem do sinal (44100 para wav)
+# - arquivo: parâmetro opcional indicando que o plot deve ser feito no arquivo
+#indicado
 function plotar_tempo(sinal, tx_amostragem, arquivo)
 	tempo = (1 : length(sinal))/tx_amostragem;
 	plot(tempo, sinal);
@@ -31,7 +60,14 @@ function plotar_tempo(sinal, tx_amostragem, arquivo)
 	endif
 endfunction
 
-
+#Responsável por plotar um espectro dado no domínio das frequências
+#Retorno: 
+# nenhum
+#Parâmetros:
+# - amplitudes: as amplitudes calculadas do espectro 
+# - tx_amostragem: a taxa de amostragem do sinal (44100 para wav)
+# - arquivo: parâmetro opcional indicando que o plot deve ser feito no arquivo
+#indicado
 function plotar_frequencias(amplitudes, tx_amostragem, arquivo)
 	N = length(amplitudes);
 	
@@ -42,6 +78,13 @@ function plotar_frequencias(amplitudes, tx_amostragem, arquivo)
 	endif
 endfunction
 
+#Responsável por descobrir o evento midi equivalente à frequência fundamental
+#de um som detectado através do espectro correspondente.
+#Retorno: 
+# fundamental = o evento MIDI correspondente à frequência fundamental detectada
+#Parâmetros:
+# - amplitudes: as amplitudes calculadas do espectro 
+# - tx_amostragem: a taxa de amostragem do sinal (44100 para wav)
 function [fundamental] = obter_fundamental(amplitudes, tx_amostragem)
 	mediana = median(amplitudes);
 	desvio = std(amplitudes);
@@ -85,6 +128,12 @@ function [fundamental] = obter_fundamental(amplitudes, tx_amostragem)
 	
 endfunction
 
+#Responsável por realizar uma busca binária na faixa de eventos MIDI representáveis
+#e buscar o evento que melhor se adequa à frequência passada
+#Retorno: 
+# evento = o evento MIDI correspondente à frequência passada
+#Parâmetros:
+# - freq: a frequência a ter o evento MIDI descoberto
 function [evento] = buscar_midi(freq)
 	ini = 0;
 	fim = 127;
@@ -111,6 +160,14 @@ function [evento] = buscar_midi(freq)
 	endif
 endfunction
 
+#Responsável por comparar números considerando erros de arredondamento.
+# Parâmetros:
+# - x: Primeiro número a ser comparado
+# - y: Segundo número a ser comparado
+# Retorno:
+# 0 se |x - y| <= 1e-2
+# 1 se x > y
+# -1 caso contrário
 function [comp] = compara(x, y)
 	if (abs(x - y) <= 1e-2)
 		comp = 0;
@@ -121,14 +178,35 @@ function [comp] = compara(x, y)
 	endif
 endfunction
 
+#Responsável por converter uma frequência para um evento MIDI realizando 
+#arredondamentos necessários
+#Retorno: 
+# evento = o evento MIDI correspondente à frequência passada
+#Parâmetros:
+# - freq: a frequência a ser convertida
 function [evento] = freq_para_midi(freq)
 	evento = round(12 * log2(freq/440) + 69);
 endfunction
 
+#Responsável por converter um evento MIDI para uma frequência
+#Retorno: 
+# - freq: a frequência calculada
+#Parâmetros:
+# evento = o evento MIDI base para o cálculo
 function [freq] = midi_para_freq(evento)
 	freq = nthroot(2, 12) ^ (evento - 69) * 440;
 endfunction
 
+#Responsável por criar um arquivo MIDI com as informações passadas
+#Retorno: 
+# nenhum
+#Parâmetros:
+# arquivo = nome do arquivo MIDI a ser gravado
+# notas = vetor contendo os eventos MIDI detectados
+# inicio = vetor indicando o tempo de início da i-ésima nota
+# fim = vetor indicando o tempo de fim da i-ésima nota
+#Observação:
+# Os tamanhos dos vetores devem ser iguais
 function escrever_midi(arquivo, notas, inicio, fim)
 	% initialize matrix:
 	M = zeros(length(notas),6);
@@ -145,6 +223,16 @@ function escrever_midi(arquivo, notas, inicio, fim)
 
 endfunction
 
+#Responsável por criar um vetor deitado indicando na i-ésima posição quantas notas 
+# já foram tocadas.
+#Exemplo:
+# [1 1 2 2 2 3] = 1 nota de 2 segundos, 1 nota de 3 segundos e 1 nota de 1 segundo
+#Retorno: 
+# tempos = o vetor explicado
+#Parâmetros:
+# sinal = o sinal (wav) a ter os tempos descobertos
+# notas = vetor contendo os eventos MIDI detectados
+# tx_amostragem: a taxa de amostragem do sinal (44100 para wav)
 function [tempos] = descobrir_tempos(sinal, tx_amostragem)
 	segundos = floor(length(sinal) / tx_amostragem);
 	tempos = zeros(1, segundos);
@@ -160,6 +248,20 @@ function [tempos] = descobrir_tempos(sinal, tx_amostragem)
 	tempos(segundos) = atual;
 endfunction
 
+#Função principal do programa. Responsável por invocar as funções descritas acima
+#para gerar o arquivo MIDI finalizado. Permite exibir os gráficos e escolher o
+#algoritmo utilizado.
+#Retorno: 
+# tempos = o tempo de execução em segundos do algoritmo escolhido
+# resultado = uma matriz deitada que indica na 1a linha os eventos MIDI detectados
+# na segunda, os tempos de início dos eventos e na terceira os tempos de fim.
+#Parâmetros:
+# arquivo = o nome do arquivo .wav a ser analisado
+# plotar = Se igual a "tela" ou "arquivo" imprime os gráficos no domínio do tempo
+#para a música toda e no domínio da frequência para cada segundo. Outros valores
+#inibem a geração de gráficos.
+#algoritmo = "dft" para utilizar DFT ou "fft" para utilizar a FFT. Outros
+#valores implicam no uso da FFT.
 function [tempo, resultado] = executar(arquivo, plotar, algoritmo)
 	if(strcmp(plotar, "arquivo"))
 		figure ("visible", "off"); 
@@ -236,8 +338,21 @@ function [tempo, resultado] = executar(arquivo, plotar, algoritmo)
 	
 	midi = strcat(nome, ".midi");
 	escrever_midi(midi, notas, inicio, fim);
+	
+%	fid = fopen (strcat(nome, "_", algoritmo, ".txt"), "w");
+%	fdisp (fid, strcat(nome, ";", algoritmo, ";"));
+%	fdisp (fid, tempo);
+%	fclose (fid);
+
 endfunction
 
+#Função que permite testar o funcionamento para todos os arquivos WAV disponíveis
+#no diretório de execução do pŕograma. Exibe na saída padrão para cada arquivo
+#o seu nome e os valores de retorno da função executa(arquivo, "nao", "fft").
+#Parâmetros:
+# nenhum
+#Retorno:
+# nenhum
 function testar()
 	wavs = dir ("*.wav");
 	for i = 1:length(wavs)
