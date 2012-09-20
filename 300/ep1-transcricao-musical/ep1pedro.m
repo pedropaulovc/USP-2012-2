@@ -1,4 +1,4 @@
-#! /bin/octave -qf
+#! /usr/bin/octave -qf
 
 
 1;
@@ -22,16 +22,24 @@ function [amp] = calcular_amplitudes(espectro)
 	amp = abs(espectro);
 endfunction
 
-function plotar_tempo(sinal, tx_amostragem)
+function plotar_tempo(sinal, tx_amostragem, arquivo)
 	tempo = (1 : length(sinal))/tx_amostragem;
 	plot(tempo, sinal);
+	
+	if(nargin > 2)
+		print(arquivo, "-dpng");
+	endif
 endfunction
 
 
-function plotar_frequencias(amplitudes, tx_amostragem)
+function plotar_frequencias(amplitudes, tx_amostragem, arquivo)
 	N = length(amplitudes);
 	
-	plot(linspace(1/tx_amostragem, tx_amostragem, N), amplitudes);
+	plot(linspace(1/tx_amostragem, tx_amostragem/3, N/3), amplitudes(1:N/3));
+
+	if(nargin > 2)
+		print(arquivo, "-dpng");
+	endif
 endfunction
 
 function [fundamental] = obter_fundamental(amplitudes, tx_amostragem)
@@ -152,9 +160,12 @@ function [tempos] = descobrir_tempos(sinal, tx_amostragem)
 	tempos(segundos) = atual;
 endfunction
 
-function [resultado] = executar(arquivo)
-	# Decodificar as informações contidas no arquivo WAV;
+function [tempo, resultado] = executar(arquivo, plotar, algoritmo)
+	if(strcmp(plotar, "arquivo"))
+		figure ("visible", "off"); 
+	endif
 	
+	nome = arquivo(1:(length(arquivo) - 4));
 	intervalo = 44100;
 	
 	try
@@ -164,6 +175,10 @@ function [resultado] = executar(arquivo)
 		exit();
 	end_try_catch
 	
+	if(strcmp(plotar, "arquivo") || strcmp(plotar, "tela"))
+		plotar_tempo(y, fs, sprintf("%s_tempo.png", arquivo));
+	endif
+	
 	tempos = descobrir_tempos(y, fs);
 	segundos = floor(length(y) / intervalo);
 	notas = [];
@@ -172,17 +187,29 @@ function [resultado] = executar(arquivo)
 	inicio_tmp = [];
 	fim_tmp = [];
 	notas_tmp = [];
+	tempo = 0;
 	
 	mesmoBloco = false;
 	for i = 0 : segundos - 1
-		x = fft(y(i * intervalo + 1 : (i + 1) * intervalo));
-		
-		amp = calcular_amplitudes(real(x), imag(x));
+		if(strcmp(algoritmo, "dft"))
+			[x, parcial] = dft(y(i * intervalo + 1 : (i + 1) * intervalo));
+			tempo += parcial;
+		else
+			tic();
+			x = fft(y(i * intervalo + 1 : (i + 1) * intervalo));
+			tempo += toc();
+		endif
+			
+		amp = calcular_amplitudes(x);
 		eventos = obter_fundamental(amp, fs);
-		%plotar_frequencias(amp, fs);
-		%drawnow;
-		%pause();		
 		
+		if(strcmp(plotar, "arquivo"))
+			plotar_frequencias(amp, fs, sprintf("%s_freq_seg_%d.png", arquivo, i + 1));
+		elseif(strcmp(plotar, "tela"))
+			plotar_frequencias(amp, fs);
+			drawnow;
+		endif
+				
 		mesmoBloco = false;
 		if(i >= 1 && tempos(i) == tempos(i + 1))
 			mesmoBloco = true;
@@ -207,7 +234,7 @@ function [resultado] = executar(arquivo)
 
 	resultado = [notas, inicio, fim]';
 	
-	midi = strcat(arquivo(1:(length(arquivo) - 3)), "midi");
+	midi = strcat(nome, ".midi");
 	escrever_midi(midi, notas, inicio, fim);
 endfunction
 
@@ -215,16 +242,20 @@ function testar()
 	wavs = dir ("*.wav");
 	for i = 1:length(wavs)
 		wavs(i).name
-		executar(wavs(i).name)
+		executar(wavs(i).name, "nao", "fft")
 	endfor
 endfunction
 
-if(nargin < 1)
-	fprintf(stderr, "Forneça como argumento ao programa o arquivo a ser analisado.\n");
-	fprintf(stderr, "Ex: octave %s lullaby.wav [plot] [alg] [tempo]\n", program_name());
+if(nargin == 0)
+	fprintf(stderr, "Forneca como argumento ao programa o arquivo a ser analisado.\n");
+	fprintf(stderr, "Ex: octave %s lullaby.wav [plot] [alg]", program_name());
 	return;
+elseif(nargin == 1)
+	[tempo, resultado] = executar(argv(){1}, "nao", "fft")
+elseif(nargin == 2)
+	[tempo, resultado] = executar(argv(){1}, argv(){2}, "fft")
 else
-	executar(argv(){1});
+	[tempo, resultado] = executar(argv(){1}, argv(){2}, argv(){3})
 endif
 
 
