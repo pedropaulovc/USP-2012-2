@@ -72,7 +72,8 @@ function plotar_frequencias(amplitudes, tx_amostragem, arquivo)
 	N = length(amplitudes);
 	
 	plot(linspace(1/tx_amostragem, tx_amostragem/3, N/3), amplitudes(1:N/3));
-
+	pause;
+	
 	if(nargin > 2)
 		print(arquivo, "-dpng");
 	endif

@@ -39,22 +39,18 @@ e Estatística \par Universidade de São Paulo}
 
 % Explique sucintamente a modelagem de um som usando Série de Fourier;
 \section*{Modelagem de som usando Séries de Fourier}
-	Jean Baptiste Fourier (1768–1830) demonstrou que toda onda periódia pode ser expressa como uma soma infinita de ondas senoidais de amplitudes variadas. As frequências de tais senoides devem ser múltiplas inteiras de alguma frequência fundamental. A esta soma infinita dá-se o nome de Série de Fourier. Mais formalmente, tomemos $f(x)$ periódica, ou seja:
+	Para modelar uma onda sonora matematicamente, primeiramente precisamos definir o que vem a ser o som. Segundo [5], o som é uma "forma de energia mecânica que se propaga causando compressão e rarefação das moléculas de um meio elástico e inercial (Sólido, líquido ou gasoso)". Por ser uma onda mecânica, possui características comuns a tais ondas, tais como: amplitude, freqüência, comprimento, velocidade, fase, potência, etc. Isso nos permite deduzir uma forma de estudar o som utilizando o arcabouço vindo do campo da Ondulatória.
+	
+	Uma onda sonora simples pode, então, ser descrita como uma senoide da forma $x(t) = A \operatorname{sen} (ft + \theta)$ onde $A$ é a amplitude, $f$ é a freqüência e $\theta$ é a fase inicial.
+
+	Jean Baptiste Fourier (1768 - 1830) percebeu que toda onda periódica pode ser expressa como uma soma infinita de ondas senoidais de amplitudes variadas. Ainda, as frequências de tais senoides devem ser múltiplas inteiras de alguma frequência fundamental. A esta soma infinita dá-se o nome de Série de Fourier. [1] Mais formalmente, segundo [6] tomemos $f(x)$ periódica, ou seja:
 
 
 	$$f(t + 2L) = f(t), \quad c \le t \le c + 2L$$
 
 	Então:
 
-	$$f(t) = \frac{a_0}{2} + \sum_{n=1}^{\infty}\left[a_n\cdot\cos\left(\frac{n \pi t}{L}\right) + b_n \cdot \operatorname{sen}\left(\frac{n \pi t}{L}\right)\right]$$
-
-	onde:
-
-	$$a_0=\frac{1}{L} \int_{c}^{c+2L} f(t)\,dt$$
-
-	$$a_n=\frac{1}{L} \int_{c}^{c+2L} f(t) \cos\left(\frac{n \pi t}{L}\right)\,dt$$
-
-	$$b_n=\frac{1}{L} \int_{c}^{c+2L} f(t) \,\operatorname{sen}\left(\frac{n \pi t}{L}\right)\,dt$$
+	$$f(t) = a_k + a_0\operatorname{sen}(f_0t + \theta0) +... + a_n\operatorname{sen} (f_nt + \theta n)$$
 
 
 
@@ -125,9 +121,12 @@ e Estatística \par Universidade de São Paulo}
 \section*{Conclusão}
 	O trabalho ajudou a fixar os conceitos vistos em aula, além de nos fazer entrar em contato com uma área não habitualmente abordada na graduação, Processamento de Sinais. Os alunos tiveram um contato prático com os conceitos, com a teoria relacionada sendo estudada à medida que havia necessidade de interpretar os resultados obtidos. Isso permitiu acumular diversos conhecimentos úteis enquanto resolve-se um problema real na área de Computação Musical. Ainda, a possibilidade de utilizar uma linguagem voltada pra processamentos matemáticos, tal como Octave, a escolhida para este trabalho, simplificou problemas de implementação, permitindo aos alunos focarem nos algoritmos propriamente ditos. Vencida a dificuldade com o entendimento do problema a ser resolvido e questões de representação de números de ponto flutuante e complexos o EP foi bastante interessante de ser implementado.
 	
+%[1] http://music.columbia.edu/cmc/musicandcomputers/chapter3/03_03.php
 %[2] www.dsc.ufcg.edu.br/~pet/ciclo_seminarios/tecnicos/2010/TransformadaDeFourier.pdf
 %[3] http://en.wikipedia.org/wiki/Fourier_transform
 %[4] http://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
+%[5] http://www.cin.ufpe.br/~musica/aulas/som.ppt
+%[6] http://pt.wikipedia.org/wiki/S%C3%A9rie_de_Fourier
 %\nocite{*}
 %\bibliographystyle{abnt-num}
 %\bibliography{bibliografia}
