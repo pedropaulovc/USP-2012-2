@@ -17,6 +17,9 @@
 	Obs: Caso seja escolhido plot = tela deve-se pressionar <Enter>
 	no terminal após cada plot para continuar a execução do programa.
 
+	O arquivo .midi gerado estará localizado no mesmo diretório que o arquivo 
+	.wav fonte.
+
 	Na saída padrão é exibida uma compilação das informações detectadas pelo 
 	programa. Exemplo: 
 	
