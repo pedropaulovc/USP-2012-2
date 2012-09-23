@@ -72,10 +72,12 @@ function plotar_frequencias(amplitudes, tx_amostragem, arquivo)
 	N = length(amplitudes);
 	
 	plot(linspace(1/tx_amostragem, tx_amostragem/3, N/3), amplitudes(1:N/3));
-	pause;
+	
 	
 	if(nargin > 2)
 		print(arquivo, "-dpng");
+	else
+		pause;
 	endif
 endfunction
 
@@ -364,7 +366,11 @@ endfunction
 
 if(nargin == 0)
 	fprintf(stderr, "Forneca como argumento ao programa o arquivo a ser analisado.\n");
-	fprintf(stderr, "Ex: octave %s lullaby.wav [plot] [alg]", program_name());
+	fprintf(stderr, "Ex: octave %s lullaby.wav [plot [algoritmo]]\n", program_name());
+	fprintf(stderr, "plot = tela | arquivo | nao; Default: nao\n");
+	fprintf(stderr, "alg = dft | fft; Default: fft\n");
+	fprintf(stderr, "Obs: Caso seja escolhido plot = tela deve-se pressionar <Enter>\n");
+	fprintf(stderr, "no terminal após cada plot para continuar a execução do programa.\n");
 	return;
 elseif(nargin == 1)
 	[tempo, resultado] = executar(argv(){1}, "nao", "fft")
