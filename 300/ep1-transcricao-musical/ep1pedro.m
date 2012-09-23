@@ -368,15 +368,21 @@ if(nargin == 0)
 	fprintf(stderr, "Forneca como argumento ao programa o arquivo a ser analisado.\n");
 	fprintf(stderr, "Ex: octave %s lullaby.wav [plot [algoritmo]]\n", program_name());
 	fprintf(stderr, "plot = tela | arquivo | nao; Default: nao\n");
-	fprintf(stderr, "alg = dft | fft; Default: fft\n");
+	fprintf(stderr, "algoritmo = dft | fft; Default: fft\n");
 	fprintf(stderr, "Obs: Caso seja escolhido plot = tela deve-se pressionar <Enter>\n");
-	fprintf(stderr, "no terminal após cada plot para continuar a execução do programa.\n");
+	fprintf(stderr, "no terminal após cada plot para continuar a execucao do programa.\n");
 	return;
 elseif(nargin == 1)
+	algoritmo = "fft"
+	plotar = "nao"
 	[tempo, resultado] = executar(argv(){1}, "nao", "fft")
 elseif(nargin == 2)
+	algoritmo = "fft"
+	plotar = argv(){2}
 	[tempo, resultado] = executar(argv(){1}, argv(){2}, "fft")
 else
+	algoritmo = argv(){3}
+	plotar = argv(){2}
 	[tempo, resultado] = executar(argv(){1}, argv(){2}, argv(){3})
 endif
 

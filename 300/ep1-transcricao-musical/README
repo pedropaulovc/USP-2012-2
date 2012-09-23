@@ -1,0 +1,47 @@
+# MAC0300 - 2012 - MÉTODOS NUMÉRICOS DA ÁLGEBRA LINEAR
+# EP1: Transcrição Automática de Música Monofônica
+
+## Autor
+	Pedro Paulo Vezzá Campos - 7538743
+
+## Execução
+	Para executar o programa utilize o seguinte comando:	
+
+	octave -qf ep1_pedro.m lullaby.wav [plot [algoritmo]]
+	
+	Onde:
+	
+	plot = tela | arquivo | nao; Default: nao
+	algoritmo = dft | fft; Default: fft
+	
+	Obs: Caso seja escolhido plot = tela deve-se pressionar <Enter>
+	no terminal após cada plot para continuar a execução do programa.
+
+	Na saída padrão é exibida uma compilação das informações detectadas pelo 
+	programa. Exemplo: 
+	
+	$ octave -qf ep1pedro.m 95_81_79_77_76_4harms_com_ruido.wav
+	
+	algoritmo = fft              <- Algoritmo escolhido
+	plotar = nao                 <- Opção por plotar ou não os gráficos
+	tempo =  0.083753            <- Tempo de execução do algoritmo (s)
+	resultado =
+
+	   95   81   79   77   76    <- Eventos MIDI correspondentes às frequências fundamentais detectadas
+		0    4    7   10   15    <- Instantes de início dos eventos acima
+		4    7   10   15   20    <- Instantes de término dos eventos acima
+	
+
+## Testes
+	O funcionamento correto do programa foi verificado através dos arquivos
+	fornecidos juntamente com o enunciado do EP. Os arquivos MIDI gerados, 
+	gráficos no domínio do tempo e frequência encontram-se no diretório **testes**.
+	
+	O programa é capaz de converter com sucesso todos os arquivos de exemplo
+	fornecidos exceto 64_75_27_29_84_4harmonicos.wav, quando detecta os eventos
+	64, 75, 39, 29, e 84.
+
+## Relatório
+	Um relatório comentando a implementação e conceitos utilizados no EP 
+	encontra-se no arquivo ep1_pedro_relatorio.pdf
+
