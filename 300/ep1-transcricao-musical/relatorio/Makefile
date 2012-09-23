@@ -1,8 +1,8 @@
 DOCUMENT = ep1-transcricao-musical
 
 document : $(DOCUMENT).tex
-#	pdflatex $(DOCUMENT).tex
-#	bibtex $(DOCUMENT).aux
+	pdflatex $(DOCUMENT).tex
+	bibtex $(DOCUMENT).aux
 	pdflatex $(DOCUMENT).tex
 	pdflatex $(DOCUMENT).tex
 
