@@ -18,8 +18,17 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
+#include <string>
+
+using namespace std;
 
 #define TCP 0
 #define UDP 1
+
+#define MAX_FDS 2
+
+#ifndef MAXLINE
+#define MAXLINE 1024
+#endif
 
 #endif

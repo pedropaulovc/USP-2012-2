@@ -347,12 +347,20 @@ void iniciar_servidor (int porta) {
       /* If revents is not POLLIN, it's an unexpected result,  */
       /* log and end the server.                               */
       /*********************************************************/
+      if (fds[i].revents & POLLHUP)
+      {
+        printf("  Descriptor %d hanged up\n", fds[i].fd);
+        close(fds[i].fd);
+        fds[i].fd = -1;
+        compress_array = true;
+        continue;
+      }
+        
       if(fds[i].revents != POLLIN)
       {
         printf("  Error! revents = %d\n", fds[i].revents);
         end_server = true;
         break;
-
       }
       if (fds[i].fd == listen_sd && nfds < MAX_FDS)
       {

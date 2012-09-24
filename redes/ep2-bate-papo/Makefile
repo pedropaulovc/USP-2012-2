@@ -8,7 +8,7 @@ OBJCLIENT = cliente.o
 all: servidor cliente
 
 %.o: %.cpp $(DEPS)
-	$(CXX) -c -o $@ $< $(CFLAGS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 servidor: $(OBJSERVER) $(OBJ)
 	$(CXX) -o $@ $^ $(CFLAGS)
