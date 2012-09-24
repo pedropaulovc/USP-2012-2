@@ -1,11 +1,123 @@
-#include "servidor_tcp.h"
+#include "servidor.h"
+
+map<string, int> nicks_socket;
+map<string, struct sockaddr> nicks_ip;
+
+string encaminhar_mensagem(char *linha){
+	char *resto = NULL;
+	char *token;
+	char *ptr = linha;
+	int rc;
+	
+	string msg_encaminhada = "MSG ";
+	msg_encaminhada += string(linha);
+	msg_encaminhada += "\r\n";
+	
+	token = strtok_r(ptr, " ", &resto);
+	
+	if(!token)
+		return "ERRO_REQ_INCOMPLETA";
+	
+	string id = string(token);
+	
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
+	
+	string origem = string(token);
+
+	if(nicks_socket.find(origem) == nicks_socket.end())
+		return "ERRO_NICK_ORIGEM_DESCONHECIDO";
+		
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
+	
+	if(!token)
+		return "REQ_INCOMPLETA";
+	
+	string destino = string(token);
+	
+	if(nicks_socket.find(destino) == nicks_socket.end())
+		return "NICK_DESTINO_DESCONHECIDO";
+	
+	string mensagem = string(resto);	
+	rc = sendto(nicks_socket[destino], msg_encaminhada.c_str(), msg_encaminhada.size(), 
+			0, &(nicks_ip[destino]), sizeof(nicks_ip[destino]));
+			
+	if (rc < 0)
+		perror("  send() failed");
+
+	printf("[%d: Mensagem id '%s' de '%s' para '%s' conteudo '%s']\n", getpid(), 
+		id.c_str(), origem.c_str(), destino.c_str(), mensagem.c_str());
+	
+	return "MSG_OK " + id;
+}
+
+int processar(int socket, char *buffer, struct sockaddr *origem, socklen_t origem_len){
+	string resposta;
+	char *resto = NULL;
+	char *token;
+	char *ptr = buffer;
+
+	int lido = strlen(buffer);
+	for(int i = 0; i < lido; i++)
+		if(buffer[i] == '\n' || buffer[i] == '\r')
+			buffer[i] = '\0';
+
+	printf("%d: Recebeu %s\n", getpid(), buffer);
+	
+	token = strtok_r(ptr, " ", &resto);
+	if(!token)
+		return 1;
+
+	if(strcmp(token, "CON") == 0){
+		ptr = resto;
+		token = strtok_r(ptr, " ", &resto);
+		if(!token)
+			resposta = "ERRO_REQ_INCOMPLETA";
+		else if(nicks_socket.find(string(token)) != nicks_socket.end())
+			resposta = "CON_NEG";
+		else {
+			nicks_socket[string(token)] = socket;
+			nicks_ip[string(token)] = *origem;
+			resposta = "CON_OK";
+		}
+		
+	} else if (strcmp(token, "LIST") == 0){
+		map<string, int>::iterator it;
+		 for (it = nicks_socket.begin(); it != nicks_socket.end(); it++)
+		 	resposta += (*it).first + " ";
+	} else if (strcmp(token, "MSG") == 0){
+		resposta = encaminhar_mensagem(resto);
+	} else if (strcmp(token, "FIM") == 0) {
+		ptr = resto;
+		token = strtok_r(ptr, " ", &resto);
+		if(!token)
+			resposta = "ERRO_REQ_INCOMPLETA";
+		else if(nicks_socket.find(string(token)) == nicks_socket.end())
+			resposta = "ERRO_NICK_DESCONHECIDO";
+		else {
+			nicks_socket.erase(string(token));
+			nicks_ip.erase(string(token));
+			resposta = "FIM_OK";
+		}
+	} else {
+		resposta = "ERRO_REQ_DESCONHECIDA";
+	}
+	
+	resposta += "\r\n";
+	printf("%d: Respondeu %s", getpid(), resposta.c_str());
+	return sendto(socket, resposta.c_str(), resposta.size(), 0, origem, origem_len);
+}
 
 //Código adaptado de http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/index.jsp?topic=/rzab6/example.htm
 
 bool tratar_requisicao(int fd){
 	bool   close_conn = false;
 	char   buffer[MAXLINE + 1];
-	int    len, rc;
+	int    rc;
+	struct sockaddr origem;
+	socklen_t origem_len = sizeof(origem);
+	bzero(&origem, origem_len);
 
     do
     {
@@ -16,7 +128,8 @@ bool tratar_requisicao(int fd){
       /* connection.                                       */
       /*****************************************************/
       
-      rc = recv(fd, buffer, sizeof(buffer), 0);
+      rc = recvfrom(fd, buffer, sizeof(buffer), 0, &origem, &origem_len);
+      
       if (rc < 0)
       {
         if (!(errno == EWOULDBLOCK || errno == EAGAIN))
@@ -35,19 +148,32 @@ bool tratar_requisicao(int fd){
       {
         printf("  Connection closed\n");
         close_conn = true;
+        
+        map<string, int>::iterator it;
+		for (it = nicks_socket.begin(); it != nicks_socket.end(); it++)
+			if((*it).second == fd){
+				nicks_socket.erase((*it).first);
+				nicks_ip.erase((*it).first);
+			}
+        
         break;
       }
-
+      
+      buffer[rc] = '\0';
+      
       /*****************************************************/
       /* Data was received                                 */
       /*****************************************************/
-      len = rc;
-      printf("  %d bytes received\n", len);
+//      len = rc;
+//      printf("  %d bytes received\n", len);
 
       /*****************************************************/
       /* Echo the data back to the client                  */
       /*****************************************************/
-      rc = send(fd, buffer, len, 0);
+//      rc = send(fd, buffer, len, 0);
+
+      rc = processar(fd, buffer, &origem, origem_len);
+
       if (rc < 0)
       {
         perror("  send() failed");
@@ -56,19 +182,17 @@ bool tratar_requisicao(int fd){
       }
 
     } while(true);
-	
-	
-	
+
 	return close_conn;
 }
 
-void iniciar_servidor_tcp (int porta) {
+void iniciar_servidor (int porta) {
   int    flags, rc, on = 1;
-  int    listen_sd = -1, new_sd = -1;
+  int    listen_sd = -1, new_sd = -1, listen_udp = -1;
   bool   close_conn, end_server = false, compress_array = false;
   struct sockaddr_in   addr;
   struct pollfd fds[MAX_FDS];
-  int    nfds = 1, current_size = 0, i, j;
+  int    nfds = 2, current_size = 0, i, j;
 
   /*************************************************************/
   /* Create an AF_INET stream socket to receive incoming       */
@@ -77,9 +201,15 @@ void iniciar_servidor_tcp (int porta) {
   listen_sd = socket(AF_INET, SOCK_STREAM, 0);
   if (listen_sd < 0)
   {
-    perror("socket() failed");
+    perror("socket() tcp failed");
     exit(-1);
   }
+
+	listen_udp = socket(AF_INET, SOCK_DGRAM, 0);
+	if (listen_udp < 0) {
+		perror("socket() udp failed");
+		exit(-1);
+	}
 
   /*************************************************************/
   /* Allow socket descriptor to be reuseable                   */
@@ -88,7 +218,16 @@ void iniciar_servidor_tcp (int porta) {
                   (char *)&on, sizeof(on));
   if (rc < 0)
   {
-    perror("setsockopt() failed");
+    perror("setsockopt() tcp failed");
+    close(listen_sd);
+    exit(-1);
+  }
+
+  rc = setsockopt(listen_udp, SOL_SOCKET,  SO_REUSEADDR,
+                  (char *)&on, sizeof(on));
+  if (rc < 0)
+  {
+    perror("setsockopt() udp failed");
     close(listen_sd);
     exit(-1);
   }
@@ -104,7 +243,17 @@ void iniciar_servidor_tcp (int porta) {
 
   if (rc < 0)
   {
-    perror("ioctl() failed");
+    perror("ioctl() tcp failed");
+    close(listen_sd);
+    exit(-1);
+  }
+
+  flags = fcntl(listen_udp, F_GETFL, 0);
+  rc = fcntl(listen_udp, F_SETFL, flags | O_NONBLOCK);
+
+  if (rc < 0)
+  {
+    perror("ioctl() upd failed");
     close(listen_sd);
     exit(-1);
   }
@@ -116,14 +265,22 @@ void iniciar_servidor_tcp (int porta) {
   addr.sin_family      = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
   addr.sin_port        = htons(porta);
-  rc = bind(listen_sd,
-            (struct sockaddr *)&addr, sizeof(addr));
+  rc = bind(listen_sd, (struct sockaddr *)&addr, sizeof(addr));
   if (rc < 0)
   {
-    perror("bind() failed");
+    perror("bind() tcp failed");
     close(listen_sd);
     exit(-1);
   }
+
+  rc = bind(listen_udp, (struct sockaddr *)&addr, sizeof(addr));
+  if (rc < 0)
+  {
+    perror("bind() udp failed");
+    close(listen_udp);
+    exit(-1);
+  }
+
 
   /*************************************************************/
   /* Set the listen back log                                   */
@@ -146,6 +303,10 @@ void iniciar_servidor_tcp (int porta) {
   /*************************************************************/
   fds[0].fd = listen_sd;
   fds[0].events = POLLIN;
+  fds[1].fd = listen_udp;
+  fds[1].events = POLLIN;
+  
+	
 
   /*************************************************************/
   /* Loop waiting for incoming connects or for incoming data   */
@@ -313,4 +474,28 @@ void iniciar_servidor_tcp (int porta) {
   }
 }
 
+
+
+
+/*
+• Cliente solicita o MSGio de um arquivo binario para um nick especifico;
+• Servidor confirma que o nick aceitou o MSGio do arquivo e permite uma conexao TCP direta entre
+  os usuarios para o MSGio deste arquivo.
+*/
+
+int main (int argc, char **argv) {
+	if (argc < 2) {
+		fprintf(stderr,"Uso: %s <Porta>\n\n",argv[0]);
+		fprintf(stderr,"Vai rodar um servidor de bate-papo na porta <Porta> TCP e UDP\n");
+		exit(1);
+	}
+
+	printf("[Servidor no ar. Aguardando conexoes na porta %s]\n",argv[1]);
+	printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
+
+	iniciar_servidor (atoi(argv[1]));
+
+	printf("[%d: Encerrando servidor]\n", getpid());
+	exit(0);
+}
 

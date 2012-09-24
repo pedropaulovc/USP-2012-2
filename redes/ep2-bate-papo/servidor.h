@@ -1,10 +1,12 @@
-#ifndef _MAIN_SERVIDOR_H
-#define _MAIN_SERVIDOR_H
+#ifndef _SERVIDOR_GERENTE_H
+#define _SERVIDOR_GERENTE_H
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
+#include <poll.h>
+#include <fcntl.h>
+#include <map>
+#include <string>
+#include <iostream>
+#include <sys/ioctl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -17,17 +19,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "servidor_gerente.h"
-#include "servidor_tcp.h"
-#include "servidor_udp.h"
-#include "util_tcp.h"
-#include "util_udp.h"
+using namespace std;
 
-#define LISTENQ 1
-#define MAXDATASIZE 100
 #ifndef MAXLINE
 #define MAXLINE 4095
 #endif
 
+#define MAX_FDS 256
+#define MAX_BACKLOG 5
+
 
 #endif
+
