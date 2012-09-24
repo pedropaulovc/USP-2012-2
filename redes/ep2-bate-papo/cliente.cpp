@@ -3,30 +3,139 @@
 int servidor_sd;
 struct sockaddr servidor_ip;
 socklen_t servidor_len;
+string nick;
+bool conectou = false;
+int id_msg = 0;
+
+void exibir_menu(){
+	puts("Comandos disponiveis:");
+	puts("@user msg - Envia a mensagem msg ao usuario user");
+	puts("/list     - Lista todos os usuarios disponiveis");
+	puts("/help     - Exibir esta ajuda");
+	puts("/exit     - Sair do bate-papo");
+}
 
 void processar_comando_cliente(){
 	int rc;
-	string buffer;
-	getline(cin, buffer);
+	string lido, requisicao;
 	
-	if(buffer.size() == 0)
+	getline(cin, lido);
+	
+	if(lido.size() == 0)
 		return;
+	else if(strncmp(lido.c_str(), "/exit", 5) == 0)
+		requisicao = "FIM " + nick;
+	else if(strncmp(lido.c_str(), "/list", 5) == 0)
+		requisicao = "LIST";
+	else if(strncmp(lido.c_str(), "/help", 5) == 0)
+		exibir_menu();
+	else if(strncmp(lido.c_str(), "@", 1) == 0){
+		stringstream ss; 
+		size_t fim_nick_destino = lido.find(" ");
+		ss << "MSG " 
+			<< id_msg++ 
+			<< " " 
+			<< nick 
+			<< " " 
+			<< lido.substr(1, fim_nick_destino);
+		if (fim_nick_destino != string::npos)
+			ss << lido.substr(fim_nick_destino + 1, string::npos);
+		requisicao = ss.str();
+	}
 	
-	rc = sendto(servidor_sd, buffer.c_str(), buffer.length(), 0, &servidor_ip, servidor_len);
+	if(requisicao.size() == 0){
+		printf("Comando desconhecido!");
+		return;
+	}
+	
+	requisicao += "\r\n";
+	
+	rc = sendto(servidor_sd, requisicao.c_str(), requisicao.length(), 0, &servidor_ip, servidor_len);
 	if (rc < 0)
 		perror("  send() failed");
 }
 
+void exibir_mensagem(char *msg){
+	char *resto = NULL;
+	char *token;
+	char *ptr = msg;
+	
+	token = strtok_r(ptr, " ", &resto);
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
+	
+	string id = string(token);
+	
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
+	
+	string origem = string(token);
+
+	ptr = resto;
+	token = strtok_r(ptr, " ", &resto);
+	
+	string destino = string(token);
+	
+	int len = strlen(resto);
+	resto[len - 1] = '\0';
+	resto[len - 2] = '\0';
+	string mensagem = string(resto);
+	
+	cout << "#" << origem << ": " << mensagem << endl;
+}
+
 void processar_chamada_servidor(){
-	char buffer[MAXLINE + 1];
+	char lido[MAXLINE + 1];
 	int rc;
 	
-	rc = recvfrom(servidor_sd, buffer, sizeof(buffer), 0, &servidor_ip, &servidor_len);	
-	buffer[rc-2] = '\0';
-	buffer[rc-1] = '\0';
-	buffer[rc] = '\0';
+	rc = recvfrom(servidor_sd, lido, sizeof(lido), 0, &servidor_ip, &servidor_len);
+	if(rc == 0){
+		fprintf(stderr, "Servidor caiu! Encerrando.\n");
+		exit(-1);
+	}
+	lido[max(rc, 0)] = '\0';
 	
-	printf("%s\n", buffer);
+	if(strncmp(lido, "FIM_OK", 6) == 0)
+		exit(0);
+	else if(strncmp(lido, "MSG_OK", 6) == 0)
+		return;
+	else if(strncmp(lido, "MSG", 3) == 0)
+		exibir_mensagem(lido);
+	else if(strncmp(lido, "NICK_DESTINO_DESCONHECIDO", 25) == 0)
+		printf("Erro! Nick desconhecido.\n");
+	else
+		printf(lido);
+}
+
+void cadastrar_nick(){
+  int    rc;
+  struct pollfd fds[1];
+  int    nfds = 1;
+  char buffer[MAXLINE + 1];
+  buffer[0] = '\0';	
+  
+  memset(fds, 0 , sizeof(fds));
+  fds[0].fd = servidor_sd;
+  fds[0].events = POLLIN;
+  
+
+	while(strcmp("CON_OK\r\n", buffer) != 0){
+		if(buffer[0] == '\0')
+			printf("Escolha o nick que gostaria de utilizar: ");
+		else
+			printf("Nick fornecido ja esta sendo usado. Escolha outro: ");
+		
+		cin >> nick;
+
+		sprintf(buffer, "CON %s", nick.c_str());
+		rc = sendto(servidor_sd, buffer, strlen(buffer), 0, &servidor_ip, servidor_len);
+	
+		poll(fds, nfds, -1);
+		rc = recvfrom(servidor_sd, buffer, sizeof(buffer), 0, &servidor_ip, &servidor_len);
+		buffer[max(rc, 0)] = '\0';
+	}
+	
+	printf("OK! Seja bem-vindo ao servidor!\n");
 }
 
 void receber_requisicoes(){  
@@ -46,8 +155,9 @@ void receber_requisicoes(){
   fds[0].events = POLLIN;
   fds[1].fd = fileno(stdin);
   fds[1].events = POLLIN;
-  
-	
+ 
+  cadastrar_nick();
+  exibir_menu();
 
   /*************************************************************/
   /* Loop waiting for incoming connects or for incoming data   */
@@ -84,7 +194,14 @@ void receber_requisicoes(){
       /*********************************************************/
       if(fds[i].revents == 0)
         continue;
-
+      
+      if (fds[i].revents & POLLHUP)
+      {
+        fprintf(stderr, "Servidor caiu! Encerrando.\n");
+        close(fds[i].fd);
+        exit(-1);
+      }
+      
       /*********************************************************/
       /* If revents is not POLLIN, it's an unexpected result,  */
       /* log and end the server.                               */
@@ -121,8 +238,9 @@ void receber_requisicoes(){
         /* Receive all incoming data on this socket            */
         /* before we loop back and call poll again.            */
         /*******************************************************/
-
+		
 		processar_comando_cliente();
+		
 
         /*******************************************************/
         /* If the close_conn flag was turned on, we need       */
@@ -304,8 +422,9 @@ int main (int argc, char **argv) {
 		exit(2);
 	}
 		
-	printf("[Cliente no ar na porta %s. Aguardando comandos e/ou mensagens de outros usuarios]\n",argv[2]);
+	printf("[Bem vindo ao sistema de bate-papo yaIRC]!\n");
 	printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
+
 
 	if(protocolo == TCP)
 		iniciar_cliente_tcp(argv[2], atoi(argv[3]));
