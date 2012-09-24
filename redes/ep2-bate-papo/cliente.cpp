@@ -4,12 +4,6 @@ int servidor_sd;
 struct sockaddr servidor_ip;
 socklen_t servidor_len;
 
-void iniciar_cliente_udp(char *ip, int porta){
-
-
-}
-
-
 void processar_comando_cliente(){
 	int rc;
 	string buffer;
@@ -35,92 +29,11 @@ void processar_chamada_servidor(){
 	printf("%s\n", buffer);
 }
 
-void iniciar_cliente_tcp(char *ip, int porta){
-  int    flags, rc, on = 1;
+void receber_requisicoes(){  
+  int    rc;
   bool   end_server = false;
   struct pollfd fds[MAX_FDS];
   int    nfds = 2, current_size = 0, i;
-  struct sockaddr_in servaddr;
-  struct  hostent *hptr;
-  bool conectado = false;
-
-  /*************************************************************/
-  /* Create an AF_INET stream socket to receive incoming       */
-  /* connections on                                            */
-  /*************************************************************/
-  servidor_sd = socket(AF_INET, SOCK_STREAM, 0);
-  if (servidor_sd < 0)
-  {
-    perror("socket() servidor failed");
-    exit(-1);
-  }
-
-  /*************************************************************/
-  /* Allow socket descriptor to be reuseable                   */
-  /*************************************************************/
-  rc = setsockopt(servidor_sd, SOL_SOCKET,  SO_REUSEADDR,
-                  (char *)&on, sizeof(on));
-  if (rc < 0)
-  {
-    perror("setsockopt() tcp failed");
-    close(servidor_sd);
-    exit(-1);
-  }
-
-  /*************************************************************/
-  /* Set socket to be nonblocking. All of the sockets for    */
-  /* the incoming connections will also be nonblocking since  */
-  /* they will inherit that state from the listening socket.   */
-  /*************************************************************/
-
-
-  flags = fcntl(servidor_sd, F_GETFL, 0);
-  rc = fcntl(servidor_sd, F_SETFL, flags | O_NONBLOCK);
-
-  if (rc < 0)
-  {
-    perror("ioctl() servidor failed");
-    close(servidor_sd);
-    exit(-1);
-  }
-/*
-  flags = fcntl(fileno(stdin), F_GETFL, 0);
-  rc = fcntl(fileno(stdin), F_SETFL, flags | O_NONBLOCK);
-
-  if (rc < 0)
-  {
-    perror("ioctl() stdin failed");
-    close(servidor_sd);
-    exit(-1);
-  }
-*/
-  /*************************************************************/
-  /* Pegando o endereço do servidor                            */
-  /*************************************************************/
-	if ((hptr = gethostbyname(ip)) == NULL) {
-		fprintf(stderr,"gethostbyname :(\n");
-		exit(1);
-	}
-	
-	if (hptr->h_addrtype != AF_INET) {
-		fprintf(stderr,"h_addrtype :(\n");
-		exit(1);
-	}
-
-  /*************************************************************/
-  /* Bind the socket                                           */
-  /*************************************************************/
-  memset(&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family      = AF_INET;
-  servaddr.sin_port        = htons(porta);
-  memcpy(&servaddr.sin_addr, hptr->h_addr_list[0], hptr->h_length);
-
-  /*************************************************************/
-  /* Conectando ao servidor                                    */
-  /*************************************************************/
-  
-  rc = connect(servidor_sd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-  
   /*************************************************************/
   /* Initialize the pollfd structure                           */
   /*************************************************************/
@@ -130,7 +43,7 @@ void iniciar_cliente_tcp(char *ip, int porta){
   /* Set up the initial listening socket                        */
   /*************************************************************/
   fds[0].fd = servidor_sd;
-  fds[0].events = POLLIN | POLLOUT;
+  fds[0].events = POLLIN;
   fds[1].fd = fileno(stdin);
   fds[1].events = POLLIN;
   
@@ -195,8 +108,6 @@ void iniciar_cliente_tcp(char *ip, int porta){
         /* loop back and call poll again.                      */
         /*******************************************************/
  		
- 		puts("Processando chamada servidor.");
- 		printf("revents = %d\n", fds[i].revents);
  		processar_chamada_servidor();
  		
       /*********************************************************/
@@ -211,8 +122,6 @@ void iniciar_cliente_tcp(char *ip, int porta){
         /* before we loop back and call poll again.            */
         /*******************************************************/
 
-		puts("Processando comando cliente");
-		printf("revents = %d\n", fds[i].revents);
 		processar_comando_cliente();
 
         /*******************************************************/
@@ -223,7 +132,7 @@ void iniciar_cliente_tcp(char *ip, int porta){
         /*******************************************************/
 
       } else {
-      	//puts("Nada a fazer.");
+      	printf("Não devia acontecer: revents[%d] = %d\n", i, fds[i].revents);
       }  /* End of existing connection is readable             */
     } /* End of loop through pollable descriptors              */
 
@@ -238,6 +147,141 @@ void iniciar_cliente_tcp(char *ip, int porta){
       close(fds[i].fd);
   }
 }
+
+
+void iniciar_cliente_udp(char *ip, int porta){
+	int rc, flags, on = 1;
+	struct sockaddr_in servaddr;
+	struct  hostent *hptr;
+
+  /*************************************************************/
+  /* Pegando o endereço do servidor                            */
+  /*************************************************************/
+	if ((hptr = gethostbyname(ip)) == NULL) {
+		fprintf(stderr,"gethostbyname :(\n");
+		exit(1);
+	}
+	
+	if (hptr->h_addrtype != AF_INET) {
+		fprintf(stderr,"h_addrtype :(\n");
+		exit(1);
+	}
+
+	if ((servidor_sd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		perror("socket UDP :(");
+		exit(-1);
+	}
+
+  /*************************************************************/
+  /* Allow socket descriptor to be reuseable                   */
+  /*************************************************************/
+  rc = setsockopt(servidor_sd, SOL_SOCKET,  SO_REUSEADDR,
+                  (char *)&on, sizeof(on));
+  if (rc < 0)
+  {
+    perror("setsockopt() tcp failed");
+    close(servidor_sd);
+    exit(-1);
+  }
+
+  flags = fcntl(servidor_sd, F_GETFL, 0);
+  rc = fcntl(servidor_sd, F_SETFL, flags | O_NONBLOCK);
+
+  if (rc < 0)
+  {
+    perror("ioctl() servidor failed");
+    close(servidor_sd);
+    exit(-1);
+  }
+
+
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family      = AF_INET;
+	servaddr.sin_port        = htons(porta);
+	memcpy(&servaddr.sin_addr, hptr->h_addr_list[0], hptr->h_length);
+
+
+	servidor_len = sizeof(servidor_ip);
+	memcpy(&servidor_ip, &servaddr, servidor_len);
+
+	
+	receber_requisicoes();
+}
+
+void iniciar_cliente_tcp(char *ip, int porta){
+	int rc, flags, on = 1;
+  struct sockaddr_in servaddr;
+  struct  hostent *hptr;
+
+  /*************************************************************/
+  /* Create an AF_INET stream socket to receive incoming       */
+  /* connections on                                            */
+  /*************************************************************/
+  servidor_sd = socket(AF_INET, SOCK_STREAM, 0);
+  if (servidor_sd < 0)
+  {
+    perror("socket() servidor failed");
+    exit(-1);
+  }
+
+  /*************************************************************/
+  /* Allow socket descriptor to be reuseable                   */
+  /*************************************************************/
+  rc = setsockopt(servidor_sd, SOL_SOCKET,  SO_REUSEADDR,
+                  (char *)&on, sizeof(on));
+  if (rc < 0)
+  {
+    perror("setsockopt() tcp failed");
+    close(servidor_sd);
+    exit(-1);
+  }
+
+  /*************************************************************/
+  /* Set socket to be nonblocking. All of the sockets for    */
+  /* the incoming connections will also be nonblocking since  */
+  /* they will inherit that state from the listening socket.   */
+  /*************************************************************/
+
+
+  flags = fcntl(servidor_sd, F_GETFL, 0);
+  rc = fcntl(servidor_sd, F_SETFL, flags | O_NONBLOCK);
+
+  if (rc < 0)
+  {
+    perror("ioctl() servidor failed");
+    close(servidor_sd);
+    exit(-1);
+  }
+
+  /*************************************************************/
+  /* Pegando o endereço do servidor                            */
+  /*************************************************************/
+	if ((hptr = gethostbyname(ip)) == NULL) {
+		fprintf(stderr,"gethostbyname :(\n");
+		exit(1);
+	}
+	
+	if (hptr->h_addrtype != AF_INET) {
+		fprintf(stderr,"h_addrtype :(\n");
+		exit(1);
+	}
+
+  /*************************************************************/
+  /* Bind the socket                                           */
+  /*************************************************************/
+  memset(&servaddr, 0, sizeof(servaddr));
+  servaddr.sin_family      = AF_INET;
+  servaddr.sin_port        = htons(porta);
+  memcpy(&servaddr.sin_addr, hptr->h_addr_list[0], hptr->h_length);
+
+  /*************************************************************/
+  /* Conectando ao servidor                                    */
+  /*************************************************************/
+  
+  rc = connect(servidor_sd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+  receber_requisicoes();
+}
+
 
 
 int main (int argc, char **argv) {
