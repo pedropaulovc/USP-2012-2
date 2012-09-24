@@ -1,11 +1,11 @@
 CXX=g++
 CXXFLAGS=-Wall -ansi -pedantic -O2 -Wno-unused-result -lm
-DEPS      = cliente_main.h
+DEPS      = cliente.h servidor.h
 OBJ       = 
 OBJSERVER = servidor.o
-OBJCLIENT = cliente_main.o
+OBJCLIENT = cliente.o
 
-all: servidor
+all: servidor cliente
 
 %.o: %.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CFLAGS)

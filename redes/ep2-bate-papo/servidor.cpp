@@ -114,7 +114,7 @@ int processar(int socket, char *buffer, struct sockaddr *origem, socklen_t orige
 bool tratar_requisicao(int fd){
 	bool   close_conn = false;
 	char   buffer[MAXLINE + 1];
-	int    rc;
+	int    len, rc;
 	struct sockaddr origem;
 	socklen_t origem_len = sizeof(origem);
 	bzero(&origem, origem_len);
@@ -164,14 +164,12 @@ bool tratar_requisicao(int fd){
       /*****************************************************/
       /* Data was received                                 */
       /*****************************************************/
-//      len = rc;
-//      printf("  %d bytes received\n", len);
+      len = rc;
+      printf("  %d bytes received\n", len);
 
       /*****************************************************/
-      /* Echo the data back to the client                  */
+      /* Process the data                                  */
       /*****************************************************/
-//      rc = send(fd, buffer, len, 0);
-
       rc = processar(fd, buffer, &origem, origem_len);
 
       if (rc < 0)
