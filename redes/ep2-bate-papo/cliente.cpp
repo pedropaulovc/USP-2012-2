@@ -6,18 +6,21 @@ socklen_t servidor_len;
 string nick;
 bool conectou = false;
 int id_msg = 0;
+int porta_arquivos;
 
 void exibir_menu(){
 	puts("Comandos disponiveis:");
-	puts("@user msg - Envia a mensagem msg ao usuario user");
-	puts("/list     - Lista todos os usuarios disponiveis");
-	puts("/help     - Exibir esta ajuda");
-	puts("/exit     - Sair do bate-papo");
+	puts("@user msg         - Envia a mensagem msg ao usuario user");
+	puts("/file user arq    - Enviar o arquivo arq ao usuario user");
+	puts("/list             - Lista todos os usuarios disponiveis");
+	puts("/help             - Exibir esta ajuda");
+	puts("/exit             - Sair do bate-papo");
 }
 
 void processar_comando_cliente(){
 	int rc;
-	string lido, requisicao;
+	string lido, requisicao, tmp, destino, arquivo;
+	stringstream ss; 
 	
 	getline(cin, lido);
 	
@@ -30,7 +33,6 @@ void processar_comando_cliente(){
 	else if(strncmp(lido.c_str(), "/help", 5) == 0)
 		exibir_menu();
 	else if(strncmp(lido.c_str(), "@", 1) == 0){
-		stringstream ss; 
 		size_t fim_nick_destino = lido.find(" ");
 		ss << "MSG " 
 			<< id_msg++ 
@@ -40,6 +42,20 @@ void processar_comando_cliente(){
 			<< lido.substr(1, fim_nick_destino);
 		if (fim_nick_destino != string::npos)
 			ss << lido.substr(fim_nick_destino + 1, string::npos);
+		requisicao = ss.str();
+	} else if(strncmp(lido.c_str(), "/file", 5) == 0){
+		ss << lido;
+		ss >> tmp;
+		ss >> destino;
+		ss >> arquivo;
+		ss.clear();
+		ss.str("");
+		
+		ss << "ARQ "
+			<< nick << " "
+			<< destino << " "
+			<< arquivo;
+			
 		requisicao = ss.str();
 	}
 	
@@ -53,6 +69,137 @@ void processar_comando_cliente(){
 	rc = sendto(servidor_sd, requisicao.c_str(), requisicao.length(), 0, &servidor_ip, servidor_len);
 	if (rc < 0)
 		perror("  send() failed");
+}
+
+void receber_arquivo(const char *nome_arquivo, const char *ip){
+  int rc, on = 1;
+  struct sockaddr_in servaddr;
+  char buffer[MAXLINE];
+
+  int socket_arquivo = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_arquivo < 0)
+  {
+    perror("socket() servidor failed");
+    exit(-1);
+  }
+
+  /*************************************************************/
+  /* Allow socket descriptor to be reuseable                   */
+  /*************************************************************/
+  rc = setsockopt(socket_arquivo, SOL_SOCKET,  SO_REUSEADDR,
+                  (char *)&on, sizeof(on));
+  if (rc < 0)
+  {
+    perror("setsockopt() tcp failed");
+    close(socket_arquivo);
+    exit(-1);
+  }
+
+  /*************************************************************/
+  /* Pegando o endereço do servidor                            */
+  /*************************************************************/
+
+  inet_pton(AF_INET, ip, &servaddr.sin_addr);
+
+  /*************************************************************/
+  /* Bind the socket                                           */
+  /*************************************************************/
+  memset(&servaddr, 0, sizeof(servaddr));
+  servaddr.sin_family      = AF_INET;
+  servaddr.sin_port        = htons(porta_arquivos);
+
+  /*************************************************************/
+  /* Conectando ao servidor                                    */
+  /*************************************************************/
+  
+  while(connect(socket_arquivo, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0);
+  
+  if(rc < 0)
+  	perror("problema connect()");
+  
+  
+  FILE *arquivo = fopen(nome_arquivo, "wb");
+  
+  while((rc = recvfrom(socket_arquivo, buffer, sizeof(buffer), 0, NULL, NULL)) > 0){
+  	fwrite(buffer, 1, rc, arquivo);
+  }
+  
+  close(socket_arquivo);
+}
+
+void enviar_arquivo(string nome_arquivo){
+	int listen_tcp;
+	int connfd;
+	struct sockaddr_in servaddr;
+	char buffer[MAXLINE];
+	int rc, on = 1;
+	
+	stringstream ss;
+	ss << nome_arquivo;
+	ss >> nome_arquivo;
+	
+	FILE *arquivo = fopen(nome_arquivo.c_str(), "rb");
+
+
+	if ((listen_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		perror("socket TCP :(\n");
+		exit(2);
+	}
+
+	rc = setsockopt(listen_tcp, SOL_SOCKET,  SO_REUSEADDR,
+		          (char *)&on, sizeof(on));
+	if (rc < 0)
+	{
+		perror("setsockopt() tcp failed");
+		close(listen_tcp);
+		exit(-1);
+	}
+
+
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family      = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port        = htons(porta_arquivos);
+
+	if (bind(listen_tcp, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
+		perror("bind TCP :(\n");
+		exit(3);
+	}
+
+	if (listen(listen_tcp, 1) == -1) {
+		perror("listen :(\n");
+		exit(4);
+	}
+
+	if ((connfd = accept(listen_tcp, (struct sockaddr *) NULL, NULL)) == -1 ) {
+		perror("accept :(\n");
+		exit(5);
+	}
+	
+	rc = setsockopt(connfd, SOL_SOCKET,  SO_REUSEADDR,
+		          (char *)&on, sizeof(on));
+	if (rc < 0)
+	{
+		perror("setsockopt() tcp failed");
+		close(connfd);
+		exit(-1);
+	}
+
+	if(!arquivo){
+		fprintf(stderr, "abrir %s :(\n", nome_arquivo.c_str());
+		return;
+	}
+
+	int lido;
+	while(!feof(arquivo)){
+		lido = fread(buffer, 1, MAXLINE, arquivo);
+		write(connfd, buffer, lido);
+	}
+	
+	
+	close(connfd);
+	close(listen_tcp);
+	fclose(arquivo);
 }
 
 void exibir_mensagem(char *msg){
@@ -103,6 +250,40 @@ void processar_chamada_servidor(){
 		exibir_mensagem(lido);
 	else if(strncmp(lido, "NICK_DESTINO_DESCONHECIDO", 25) == 0)
 		printf("Erro! Nick desconhecido.\n");
+	else if(strncmp(lido, "ARQ_OK", 6) == 0){
+		printf("Iniciando transferencia de %s", lido + 7);
+		enviar_arquivo(string(lido + 7));
+		printf("Transferencia concluida\n");
+	} else if(strncmp(lido, "ARQ_NEG", 6) == 0){
+		printf("Transferência de %s negada.\n", lido + 6);
+	} else if(strncmp(lido, "ARQ", 3) == 0) {
+		stringstream ss;
+		string tmp, origem, destino, arquivo, ip;
+		char resp = '\0';
+		ss << string(lido);
+		
+		ss >> tmp >> origem >> destino >> arquivo >> ip;
+		
+		while(resp != 'y' && resp != 'n'){
+			cout << "Voce aceita receber o arquivo " << arquivo 
+			 << " de " << origem << "? [y/n]" << endl;
+			cin >> resp;
+		}
+		
+		string resultado;
+		if(resp == 'y')
+			resultado = "ARQ_OK ";
+		else
+			resultado = "ARQ_NEG ";
+		resultado += arquivo;
+		
+		sendto(servidor_sd, resultado.c_str(), resultado.length(), 0, &servidor_ip, servidor_len);
+
+		if(resp == 'y')	{
+			receber_arquivo(arquivo.c_str(), ip.c_str());
+			cout << "Arquivo recebido." << endl;
+		}
+	}
 	else
 		printf(lido);
 }
@@ -424,7 +605,8 @@ int main (int argc, char **argv) {
 		
 	printf("[Bem vindo ao sistema de bate-papo yaIRC]!\n");
 	printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
-
+	
+	porta_arquivos = atoi(argv[3]) + 1;
 
 	if(protocolo == TCP)
 		iniciar_cliente_tcp(argv[2], atoi(argv[3]));

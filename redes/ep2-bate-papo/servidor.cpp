@@ -2,6 +2,8 @@
 
 map<string, int> nicks_socket;
 map<string, struct sockaddr> nicks_ip;
+map<int, struct sockaddr> socket_ip;
+map<string, string> arquivo_requisitante;
 
 string encaminhar_mensagem(char *linha){
 	char *resto = NULL;
@@ -32,7 +34,7 @@ string encaminhar_mensagem(char *linha){
 	token = strtok_r(ptr, " ", &resto);
 	
 	if(!token)
-		return "REQ_INCOMPLETA";
+		return "ERRO_REQ_INCOMPLETA";
 	
 	string destino = string(token);
 	
@@ -51,6 +53,47 @@ string encaminhar_mensagem(char *linha){
 	
 	return "MSG_OK " + id;
 }
+
+string requisitar_envio_arquivo(char *linha){
+	stringstream ss;
+	string arquivo, origem, destino;
+	int rc;
+	
+	ss << string(linha);
+	
+	ss >> origem >> destino >> arquivo;
+	
+	if(nicks_socket.find(origem) == nicks_socket.end())
+		return "ERRO_NICK_ORIGEM_DESCONHECIDO";
+		
+	if(nicks_socket.find(destino) == nicks_socket.end())
+		return "NICK_DESTINO_DESCONHECIDO";
+	
+	arquivo_requisitante[arquivo] = origem;
+	
+	struct sockaddr_in ip_origem;
+	char enderecoLocal[MAXLINE + 1];
+	memcpy(&ip_origem, &(nicks_ip[origem]), sizeof(nicks_ip[origem]));
+	inet_ntop(AF_INET, &(ip_origem.sin_addr),enderecoLocal,sizeof(enderecoLocal));
+
+	string msg_encaminhada = "ARQ ";
+	msg_encaminhada += string(linha);
+	msg_encaminhada += " ";
+	msg_encaminhada += enderecoLocal;
+	msg_encaminhada += "\r\n";
+
+	rc = sendto(nicks_socket[destino], msg_encaminhada.c_str(), msg_encaminhada.size(), 
+			0, &(nicks_ip[destino]), sizeof(nicks_ip[destino]));
+			
+	if (rc < 0)
+		perror("  send() failed");
+
+	printf("[%d: Envio de '%s' para '%s'. Arquivo '%s'. IP '%s']\n", getpid(), 
+		origem.c_str(), destino.c_str(), arquivo.c_str(), enderecoLocal);
+	
+	return "";
+}
+
 
 int processar(int socket, char *buffer, struct sockaddr *origem, socklen_t origem_len){
 	string resposta;
@@ -100,8 +143,25 @@ int processar(int socket, char *buffer, struct sockaddr *origem, socklen_t orige
 			nicks_ip.erase(string(token));
 			resposta = "FIM_OK";
 		}
+	
+	} else if (strcmp(token, "ARQ") == 0) {
+		resposta = requisitar_envio_arquivo(resto);
+	} else if (strcmp(token, "ARQ_OK") == 0) {
+		resposta = "ARQ_OK ";
+		resposta += resto;
+		resposta += "\r\n";
+		string requisitante = arquivo_requisitante[string(resto)];
+		printf("%d: Respondeu para %s, %s", getpid(), requisitante.c_str(), resposta.c_str());
+
+		return sendto(nicks_socket[requisitante], resposta.c_str(), resposta.size(),
+			0, &(nicks_ip[requisitante]), sizeof(nicks_ip[requisitante]));
+			
 	} else {
 		resposta = "ERRO_REQ_DESCONHECIDA";
+	}
+	
+	if(resposta == ""){
+		return 1;
 	}
 	
 	resposta += "\r\n";
@@ -111,7 +171,7 @@ int processar(int socket, char *buffer, struct sockaddr *origem, socklen_t orige
 
 //Código adaptado de http://publib.boulder.ibm.com/infocenter/iseries/v6r1m0/index.jsp?topic=/rzab6/example.htm
 
-bool tratar_requisicao(int fd){
+bool tratar_requisicao(int fd, bool udp){
 	bool   close_conn = false;
 	char   buffer[MAXLINE + 1];
 	int    len, rc;
@@ -170,7 +230,10 @@ bool tratar_requisicao(int fd){
       /*****************************************************/
       /* Process the data                                  */
       /*****************************************************/
-      rc = processar(fd, buffer, &origem, origem_len);
+      if(udp)
+	      rc = processar(fd, buffer, &origem, origem_len);
+	  else
+	      rc = processar(fd, buffer, &(socket_ip[fd]), sizeof(socket_ip[fd]));
 
       if (rc < 0)
       {
@@ -189,8 +252,10 @@ void iniciar_servidor (int porta) {
   int    listen_sd = -1, new_sd = -1, listen_udp = -1;
   bool   close_conn, end_server = false, compress_array = false;
   struct sockaddr_in   addr;
+  struct sockaddr   novo_ip;
   struct pollfd fds[MAX_FDS];
   int    nfds = 2, current_size = 0, i, j;
+  socklen_t novo_ip_len = sizeof(novo_ip);
 
   /*************************************************************/
   /* Create an AF_INET stream socket to receive incoming       */
@@ -383,7 +448,7 @@ void iniciar_servidor (int porta) {
           /* failure on accept will cause us to end the        */
           /* server.                                           */
           /*****************************************************/
-          new_sd = accept(listen_sd, NULL, NULL);
+          new_sd = accept(listen_sd, &(novo_ip), &novo_ip_len);
           if (new_sd < 0)
           {
             if (!(errno == EWOULDBLOCK || errno == EAGAIN))
@@ -393,7 +458,9 @@ void iniciar_servidor (int porta) {
             }
             break;
           }
-
+          
+          socket_ip[new_sd] = novo_ip;
+			
           /*****************************************************/
           /* Add the new incoming connection to the            */
           /* pollfd structure                                  */
@@ -426,7 +493,7 @@ void iniciar_servidor (int porta) {
         /* before we loop back and call poll again.            */
         /*******************************************************/
 
-		close_conn = tratar_requisicao(fds[i].fd);
+		close_conn = tratar_requisicao(fds[i].fd, fds[i].fd == listen_udp);
 
         /*******************************************************/
         /* If the close_conn flag was turned on, we need       */
