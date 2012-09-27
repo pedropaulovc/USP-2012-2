@@ -1,0 +1,54 @@
+# MAC0448 - 2012 - PROGRAMAÇÃO PARA REDES DE COMPUTADORES
+# EP2: Bate-papo
+
+## Autor
+	Pedro Paulo Vezzá Campos - 7538743
+
+## Compilação
+	O programa acompanha um Makefile. Para compilar o EP execute o comando
+	''make'' no diretório descompactado. Os executáveis gerados chamam-se
+	''cliente'' e servidor. 
+	
+## Execução
+	Servidor:
+		./servidor <Porta>
+	Cliente
+		./cliente <tcp|udp> <IP servidor> <Porta>
+		
+	
+## Protocolo
+	O protocolo de camada de aplicação lembra um pouco uma comunicação HTTP:
+	
+	Comandos possíveis:
+		LIST
+				|-> user1 user2 ..    - Lista dos usuários conectados separada por espaços
+	
+		CON user                      - Conecta o usuário com nick user
+				|-> CON_OK            - Servidor aceitou o nick fornecido
+				|-> CON_NEG           - Servidor rejeitou o nick fornecido (Repetido)
+	
+		MSG id origem destino msg     - Enviar uma mensagem com id "id" arbitrário,
+		                                origem e destino devem ser nicks cadastrados
+		                                no servidor, msg pode ser vazia.
+	   (origem recebe) |-> MSG_OK id         - Mensagem foi enviada com sucesso
+	   (origem recebe) |-> ERRO_REQ_INCOMPLETA - Mensagem sem todos os campos definidos
+	   (origem recebe) |-> ERRO_NICK_ORIGEM_DESCONHECIDO - O nick 'origem' não foi encontrado no servidor
+	   (origem recebe) |-> NICK_DESTINO_DESCONHECIDO     - O nick 'destino' não foi encontrado no servidor
+	   (destino recebe)|-> MSG origem msg    - Chegada de uma mensagem ao usuário vinda de origem;
+	   
+	   FIM origem
+				|-> FIM_OK              - Servidor aceitou a finalização da conexão do nick fornecido
+				|-> ERRO_REQ_INCOMPLETA - Falta campo origem na requisição
+				|-> ERRO_NICK_DESCONHECIDO - origem fornecido não está no banco do servidor
+     
+       ARQ origem destino arquivo    - Enviar o arquivo arquivo do usuário origem para o destino
+	   (destino recebe) |-> ARQ origem arquivo ip - Usuário origem requisita o envio do arquivo. IP de origem é ip.
+ 		   (servidor recebe)|-> ARQ_OK arquivo    - destino aceita o envio
+ 		   (servidor recebe)|-> ARQ_NEG arquivo   - destino recusa o envio
+	   			(origem recebe) |-> ARQ_OK arquivo    - destino aceita o envio, começa o envio do arquivo entre os clientes
+	   			(origem recebe) |-> ARQ_NEG arquivo   - destino recusa o envio		
+	   
+## Testes
+	O funcionamento correto do programa foi verificado para as situações 
+	descritas no EP através de testes manuais com o código produzido
+
