@@ -1,0 +1,2 @@
+1notaA4_1seg_4harmonicos2;fft;
+ 0.092826

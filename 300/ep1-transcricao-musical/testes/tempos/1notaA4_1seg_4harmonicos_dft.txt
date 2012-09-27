@@ -1,0 +1,2 @@
+1notaA4_1seg_4harmonicos;dft;
+ 388.31
