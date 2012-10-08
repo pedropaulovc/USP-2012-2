@@ -13,7 +13,10 @@
 	 set_handler/2, 
 	 set_prompt/2,
 	 set_state/2,
-	 set_title/2, insert_str/2, update_state/3]).
+	 set_title/2,
+	 insert_str/2,
+	 update_state/3,
+	 update_users/2]).
 
 start(Pid) ->
     gs:start(),
@@ -25,6 +28,7 @@ set_handler(Pid, Fun)   -> Pid ! {handler, Fun}.
 set_prompt(Pid, Str)    -> Pid ! {prompt, Str}.
 set_state(Pid, State)   -> Pid ! {state, State}.
 insert_str(Pid, Str)    -> Pid ! {insert, Str}.
+update_users(Pid, Users)-> Pid ! {update_users, Users}.
 update_state(Pid, N, X) -> Pid ! {updateState, N, X}. 
 
 rpc(Pid, Q) ->    
@@ -38,11 +42,11 @@ widget(Pid) ->
     Size = [{width,500},{height,200}],
     Win = gs:window(gs:start(),
 		    [{map,true},{configure,true},{title,"window"}|Size]),
-    gs:frame(packer, Win,[{packer_x, [{stretch,1,500}]},
-			  {packer_y, [{stretch,10,100,120},
-				      {stretch,1,15,15}]}]),
-    gs:create(editor,editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
-    gs:create(entry, entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
+    gs:frame(packer, Win,[{packer_x, [{stretch,1,400}, {stretch,1,100}]},
+			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
+    gs:create(editor, editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
+    gs:create(entry,  entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
+    gs:create(editor, group, packer, [{pack_x,2},{pack_y,1},{vscroll,right}]),
     gs:config(packer, Size),
     Prompt = " > ",
     State = nil,
@@ -70,6 +74,11 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	{insert, Str} ->
 	    gs:config(editor, {insert,{'end',Str}}),
 	    scroll_to_show_last_line(),
+	    loop(Win, Pid, Prompt, State, Parse);
+	{update_users, Users} ->
+	    io:format("~p ~p~n", [self(), Users]),
+	    StringUsers = string:join(Users, "\n"),
+	    gs:config(group, {insert, {'end',StringUsers}}),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{updateState, N, X} ->
 	    io:format("setelemtn N=~p X=~p State=~p~n",[N,X,State]),

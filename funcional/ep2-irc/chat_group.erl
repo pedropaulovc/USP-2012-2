@@ -26,7 +26,7 @@ delete(Pid, [{Pid,Nick}|T], L) -> {Nick, reverse(T, L)};
 delete(Pid, [H|T], L)          -> delete(Pid, T, [H|L]);
 delete(_, [], L)               -> {"????", L}.
 
-
+get_nicks(L) -> lists:map(fun({_C, Nick}) -> Nick end, L).
 
 group_controller([]) ->
     exit(allGone);
@@ -36,10 +36,13 @@ group_controller(L) ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(L);
 	{login, C, Nick} ->
+	    Users = [{C,Nick}|L],
 	    controller(C, self()),
 	    send(C, ack),
 	    self() ! {chan, C, {relay, Nick, "I'm joining the group"}},
-	    group_controller([{C,Nick}|L]);
+        io:format("~p~n", [get_nicks(Users)]),
+	    self() ! {chan, C, {relay, Nick, {users, get_nicks(Users)} }},
+	    group_controller(Users);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),
 	    self() ! {chan, C, {relay, Nick, "I'm leaving the group"}},

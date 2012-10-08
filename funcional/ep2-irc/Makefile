@@ -13,7 +13,7 @@ MODS =  any_apply \
 	lib_chan lib_chan_mm lib_chan_cs lib_chan_test\
         lib_chan_auth \
         mod_echo mod_math mod_chat_controller mod_name_server\
-        test1 test_name_server mod_srpc
+        test1 test_name_server mod_srpc lib_md5
 
 
 ERL = erl -boot start_clean 
