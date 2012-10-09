@@ -40,12 +40,12 @@ group_controller(L) ->
 	    controller(C, self()),
 	    send(C, ack),
 	    self() ! {chan, C, {relay, Nick, "I'm joining the group"}},
-        io:format("~p~n", [get_nicks(Users)]),
 	    self() ! {chan, C, {relay, Nick, {users, get_nicks(Users)} }},
 	    group_controller(Users);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),
 	    self() ! {chan, C, {relay, Nick, "I'm leaving the group"}},
+	    self() ! {chan, C, {relay, Nick, {users, get_nicks(L1)} }},
 	    group_controller(L1);
 	Any ->
 	    io:format("group controller received Msg=~p~n", [Any]),

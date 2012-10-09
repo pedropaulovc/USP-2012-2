@@ -76,7 +76,9 @@ active(Widget, MM) ->
 	     lib_chan_mm:send(MM, {relay, Nick, Str}),
 	     active(Widget, MM);
 	 {chan, MM, {msg, _From, _Pid, {users, Users}}} ->
-	     update_users(Widget, Users);
+%	     io:format("~p: Recebi usuarios ~p~n", [self(), Users]);
+	     update_users(Widget, Users),
+	     active(Widget, MM);
 	 {chan, MM, {msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", Str, "\n"]),
 	     active(Widget, MM);

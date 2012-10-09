@@ -45,7 +45,7 @@ widget(Pid) ->
     gs:frame(packer, Win,[{packer_x, [{stretch,1,400}, {stretch,1,100}]},
 			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
     gs:create(editor, editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
-    gs:create(entry,  entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
+    gs:create(entry,  entry, packer, [{pack_x,{1,2}},{pack_y,2},{keypress,true}]),
     gs:create(editor, group, packer, [{pack_x,2},{pack_y,1},{vscroll,right}]),
     gs:config(packer, Size),
     Prompt = " > ",
@@ -76,8 +76,8 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    scroll_to_show_last_line(),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{update_users, Users} ->
-	    io:format("~p ~p~n", [self(), Users]),
 	    StringUsers = string:join(Users, "\n"),
+	    gs:config(group, clear),
 	    gs:config(group, {insert, {'end',StringUsers}}),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{updateState, N, X} ->
