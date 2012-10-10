@@ -28,6 +28,11 @@ delete(_, [], L)               -> {"????", L}.
 
 get_nicks(L) -> lists:map(fun({_C, Nick}) -> Nick end, L).
 
+send_private(_C, _From, _To, _Str, []) -> not_found;
+send_private(C, From, To, Str, [{Pid, To}|_]) -> send(Pid, {private_msg, From, C, Str});
+send_private(C, From, To, Str, [_|T]) -> send_private(C, From, To, Str, T).
+	
+
 group_controller([]) ->
     exit(allGone);
 group_controller(L) ->
@@ -35,6 +40,9 @@ group_controller(L) ->
 	{chan, C, {relay, Nick, Str}} ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(L);
+	{chan, C, {private, From, To, Str}} ->
+		send_private(C, From, To, Str, L),
+		group_controller(L);
 	{login, C, Nick} ->
 	    Users = [{C,Nick}|L],
 	    controller(C, self()),

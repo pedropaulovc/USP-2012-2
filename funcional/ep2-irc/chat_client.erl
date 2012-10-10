@@ -10,7 +10,7 @@
 
 -import(io_widget, 
 	[get_state/1, insert_str/2, set_prompt/2, set_state/2, 
-	 set_title/2, set_handler/2, update_state/3, update_users/2]).
+	 set_title/2, set_handler/2, update_state/3, update_users/2, whole_group/0]).
 
 -export([start/0, test/0, connect/5]).
 
@@ -71,16 +71,22 @@ wait_login_response(Widget, MM) ->
 
 
 active(Widget, MM) ->
+     WholeGroup = whole_group(),
      receive
-	 {Widget, Nick, Str} ->
-	     lib_chan_mm:send(MM, {relay, Nick, Str}),
+	 {Widget, From, WholeGroup, Str} ->
+	     lib_chan_mm:send(MM, {relay, From, Str}),
+	     active(Widget, MM);
+	 {Widget, From, To, Str} ->
+	     lib_chan_mm:send(MM, {private, From, To, Str}),
 	     active(Widget, MM);
 	 {chan, MM, {msg, _From, _Pid, {users, Users}}} ->
-%	     io:format("~p: Recebi usuarios ~p~n", [self(), Users]);
 	     update_users(Widget, Users),
 	     active(Widget, MM);
 	 {chan, MM, {msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", Str, "\n"]),
+	     active(Widget, MM);
+	 {chan, MM, {private_msg, From, Pid, Str}} ->
+	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", "*private* ", Str, "\n"]),
 	     active(Widget, MM);
 	 {'EXIT',Widget,windowDestroyed} ->
 	     lib_chan_mm:close(MM);

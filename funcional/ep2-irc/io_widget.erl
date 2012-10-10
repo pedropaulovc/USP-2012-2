@@ -16,7 +16,8 @@
 	 set_title/2,
 	 insert_str/2,
 	 update_state/3,
-	 update_users/2]).
+	 update_users/2,
+	 whole_group/0]).
 
 start(Pid) ->
     gs:start(),
@@ -46,7 +47,8 @@ widget(Pid) ->
 			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
     gs:create(editor, editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry,  entry, packer, [{pack_x,{1,2}},{pack_y,2},{keypress,true}]),
-    gs:create(editor, group, packer, [{pack_x,2},{pack_y,1},{vscroll,right}]),
+    gs:create(listbox, group, packer, [{pack_x,2},{pack_y,1},{vscroll,right},
+              {hscroll,false}, {add, whole_group()}, {selection, 0}]),
     gs:config(packer, Size),
     Prompt = " > ",
     State = nil,
@@ -76,9 +78,9 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    scroll_to_show_last_line(),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{update_users, Users} ->
-	    StringUsers = string:join(Users, "\n"),
 	    gs:config(group, clear),
-	    gs:config(group, {insert, {'end',StringUsers}}),
+	    gs:config(group, {items, [whole_group() | Users]}),
+	    gs:config(group, {selection, 0}),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{updateState, N, X} ->
 	    io:format("setelemtn N=~p X=~p State=~p~n",[N,X,State]),
@@ -89,12 +91,14 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    exit(windowDestroyed);
 	{gs, entry,keypress,_,['Return'|_]} ->
 	    Text = gs:read(entry, text),
+	    [Selected|_] = gs:read(group, selection),
+	    To = gs:read(group, {get, Selected}),
 	    %% io:format("Read:~p~n",[Text]),
 	    gs:config(entry, {delete,{0,last}}),
 	    gs:config(entry, {insert,{0,Prompt}}),
 	    try Parse(Text) of
 		Term ->
-		    Pid ! {self(), State, Term}
+		    Pid ! {self(), State, To, Term}
 	    catch
 		_:_ ->
 		    self() ! {insert, "** bad input**\n** /h for help\n"}
@@ -138,7 +142,7 @@ loop(W) ->
 parse(Str) ->
     {str, Str}.
 
-    
+whole_group() -> "GROUP".
     
     
 		  
