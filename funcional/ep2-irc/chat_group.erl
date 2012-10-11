@@ -17,8 +17,10 @@ start(C, Nick) ->
     process_flag(trap_exit, true),
     controller(C, self()),
     send(C, ack),
+    Users = [{C,Nick}],
     self() ! {chan, C, {relay, Nick, "I'm starting the group"}},
-    group_controller([{C,Nick}]).
+    self() ! {chan, C, {relay, Nick, {users, get_nicks(Users)} }},
+    group_controller(Users).
 
 
 
