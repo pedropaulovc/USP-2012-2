@@ -1,3 +1,15 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Alunos: 
+%         Alessandro Calò          - 4325393
+%         Pedro Paulo Vezzá Campos - 7538743
+%
+% MAC0319-2012 - Programação Funcional Contemporânea - EP2: Melhorias no IRC
+% Lite do Armstrong
+%
+% Sobre o arquivo: Contém o código do modelo lógico de um cliente do IRC Lite
+% modificado para atender ao enunciado proposto
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
