@@ -1,0 +1,44 @@
+# MAC0319 - 2012 - PROGRAMAÇÃO FUNCIONAL CONTEMPORÂNEA
+# EP2: IRC Lite
+
+## Autores
+Pedro Paulo Vezzá Campos - 7538743
+Alessandro Calò          - 4325393
+
+## Compilação
+O programa acompanha um Makefile. Para compilar o EP execute o comando
+''make'' no diretório descompactado.
+
+## Execução
+Após compilar todos os módulos, é possível executar o programa, que conta com 6 usuários de teste.
+Proceder da seguinte maneira:
+No mesmo diretório, execute o comando ''make chat_server''.
+Em outra janela do terminal, no mesmo diretório, execute ''make chat_client''.
+
+## Estruturação
+Os 6 usuários de teste estão assim divididos:
+-Jane, Jim, Joe e Sue no grupo "general"
+-Jay e Kay no grupo "alternative"
+-tylerdurden no grupo "fightclub"
+
+Cada usuário possui 2 janelas: a janela do chat (Widget), e a janela dos grupos (GroupWindow).
+
+
+## Testes
+Para testar a tarefa n, consulte a n-ésima linha abaixo:
+1) O painel com os usuários do grupo atual encontra-se à direita na Widget. 
+2) A lista dos nomes dos usuários de um determinado grupo encontra-se, na GroupWindow, na coluna da direita, após clicar em um grupo da coluna da esquerda.
+3) A lista com os nomes de todos os grupos é justamente a da coluna da esquerda.
+4) Para enviar mensagens privadas para algum usuário "usuario_qualquer" do grupo, basta clicar no botão "To usuario_qualquer" antes de enviar a primeira mensagem. Para voltar a enviar mensagens públicas (ou seja, para todas as pessoas daquele grupo), basta clicar em "To group". Por padrão são enviadas mensagens a todo o grupo. O envio de uma mensagem é realizado da mesma forma que no código fornecido pelo livro. 
+
+Para criar um usuário a mais em um servidor IRC rodando localmente, na janela onde foi executado "make chat_client", execute o comando:
+1> chat_client:connect_local ("nickname", "groupname").
+onde nickname é o nome do usuário, uma string qualquer, e groupname é o nome do grupo, também uma string qualquer.
+
+Caso o servidor esteja executando remotamente utilize:
+1> chat_client:connect("endereco", 2223, "AsDT67aQ", "groupname", "nickname").
+
+Caso o grupo já exista, o novo usuário será incluído naquele grupo. Caso contrário, um novo grupo será criado para este usuário.
+
+Ao fechar qualquer uma das 2 janelas de um usuário, a outra fecha-se também.
+
