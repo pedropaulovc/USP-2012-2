@@ -25,8 +25,11 @@
 	 set_title/2, set_handler/2, update_state/3, update_users/2, update_groups/2,
 	 whole_group/0]).
 
--export([start/0, test/0, connect/5]).
+-export([start/0, test/0, connect/5, connect_local/2]).
 
+
+connect_local(User, Group) ->
+    connect("localhost", 2223, "AsDT67aQ", Group, User).
 
 start() -> 
     connect("localhost", 2223, "AsDT67aQ", "general", "joe").
