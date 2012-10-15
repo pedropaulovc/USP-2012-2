@@ -17,11 +17,19 @@
 	 insert_str/2,
 	 update_state/3,
 	 update_users/2,
+	 update_groups/2,
+	 start_group_window/1,
 	 whole_group/0]).
 
 start(Pid) ->
     gs:start(),
     spawn_link(fun() -> widget(Pid) end).
+
+
+% analogo ao metodo de cima (start/1)
+start_group_window(Pid) ->
+	gs:start(),
+	spawn_link(fun() -> group_window(Pid) end).
 
 get_state(Pid)          -> rpc(Pid, get_state).
 set_title(Pid, Str)     -> Pid ! {title, Str}.
@@ -30,6 +38,8 @@ set_prompt(Pid, Str)    -> Pid ! {prompt, Str}.
 set_state(Pid, State)   -> Pid ! {state, State}.
 insert_str(Pid, Str)    -> Pid ! {insert, Str}.
 update_users(Pid, Users)-> Pid ! {update_users, Users}.
+%%% metodo que manda a mensagem pro chat_client
+update_groups(Pid, Group_List) -> Pid ! {update_list, Group_List}.
 update_state(Pid, N, X) -> Pid ! {updateState, N, X}. 
 
 rpc(Pid, Q) ->    
@@ -39,13 +49,34 @@ rpc(Pid, Q) ->
 	    R
     end.
 
+%%% criacao da janela dos grupos. No final, ele tem o seu proprio loop (group_loop/3)
+group_window(Pid) ->
+	Size_Groups = [{width,100},{height,200}],
+
+    Win_Groups = gs:window (gs:start(), [{map, true}, {configure,true},{title,"Groups window"}|Size_Groups]),
+
+	gs:frame(packer, Win_Groups, []),
+	
+	gs:create(editor, group_list, packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
+
+	group_loop (Win_Groups, Pid, nil).
+	
+
+
 widget(Pid) ->
     Size = [{width,500},{height,200}],
+	
+
     Win = gs:window(gs:start(),
 		    [{map,true},{configure,true},{title,"window"}|Size]),
-    gs:frame(packer, Win,[{packer_x, [{stretch,1,400}, {stretch,1,100}]},
-			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
-    gs:create(editor, editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
+
+	
+	
+	gs:frame(packer, Win,[{packer_x, [{stretch,1,400}, {stretch,1,100}]},
+			  	{packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
+    
+
+	gs:create(editor, editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry,  entry, packer, [{pack_x,{1,2}},{pack_y,2},{keypress,true}]),
     gs:create(listbox, group, packer, [{pack_x,2},{pack_y,1},{vscroll,right},
               {hscroll,false}, {add, whole_group()}, {selection, 0}]),
@@ -54,6 +85,40 @@ widget(Pid) ->
     State = nil,
     gs:config(entry, {insert,{0,Prompt}}),
     loop(Win, Pid, Prompt, State, fun parse/1). 
+
+
+
+%%% o loop da janela de grupos, com alguns receives que achei relevante. Talvez alguns deles sejam inuteis, mas deixei ai em todo caso.
+group_loop (Win, Pid, State) ->
+
+	receive
+		{From, get_state} ->
+			From ! {self(), State},
+			group_loop(Win, Pid, State);
+		{state, S} ->
+			group_loop(Win, Pid, S);
+		{title, Str} ->
+			gs:config(Win, [{title, Str}]),
+			group_loop(Win, Pid, State);
+		%%%% aqui eh onde ele (em teoria) consulta a lista e re-imprime os nomes na janela.
+		{update_list, Group_List} ->
+			StringGroups = string:join(Group_List, "\n"),
+			gs:config(group_list, clear),
+			gs:config(group_list, {insert, {'end',StringGroups}}),
+			group_loop(Win, Pid, State);
+		{updateState, N, X} ->
+			io:format("setelemtn N=~p X=~p State=~p~n",[N,X,State]),
+			State1 = setelement(N, State, X),
+			group_loop(Win, Pid, State1);
+		{gs,_,destroy,_,_} ->
+			io:format("Destroyed~n",[]),
+			exit(windowDestroyed);
+		{gs,_,configure,[],[W,H,_,_]} ->
+			gs:config(packer, [{width,W},{height,H}]),
+			group_loop(Win, Pid, State)
+	end.
+
+
 
 loop(Win, Pid, Prompt, State, Parse) ->   
     receive

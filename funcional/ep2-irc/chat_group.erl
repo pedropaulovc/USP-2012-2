@@ -17,10 +17,8 @@ start(C, Nick) ->
     process_flag(trap_exit, true),
     controller(C, self()),
     send(C, ack),
-    Users = [{C,Nick}],
     self() ! {chan, C, {relay, Nick, "I'm starting the group"}},
-    self() ! {chan, C, {relay, Nick, {users, get_nicks(Users)} }},
-    group_controller(Users).
+    group_controller([{C,Nick}]).
 
 
 
@@ -30,21 +28,19 @@ delete(_, [], L)               -> {"????", L}.
 
 get_nicks(L) -> lists:map(fun({_C, Nick}) -> Nick end, L).
 
-send_private(_C, _From, _To, _Str, []) -> not_found;
-send_private(C, From, To, Str, [{Pid, To}|_]) -> send(Pid, {private_msg, From, C, Str});
-send_private(C, From, To, Str, [_|T]) -> send_private(C, From, To, Str, T).
-	
-
 group_controller([]) ->
     exit(allGone);
+
+
+%%% L eh a lista com os nicks dos caras do grupo
 group_controller(L) ->
     receive
 	{chan, C, {relay, Nick, Str}} ->
-	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
+
+%%%% soh pra testar: ele nunca imprime esse oi. Porque?
+	    io:format("oi~n",[]),
+		foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(L);
-	{chan, C, {private, From, To, Str}} ->
-		send_private(C, From, To, Str, L),
-		group_controller(L);
 	{login, C, Nick} ->
 	    Users = [{C,Nick}|L],
 	    controller(C, self()),
