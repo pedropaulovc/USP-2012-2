@@ -31,34 +31,54 @@ start_server() ->
 server_loop(L) ->
     receive
 	{mm, Channel, {login, Group, Nick}} ->
-	    case lookup(Group, L) of
+	    L1 = case lookup(Group, L) of
 		{ok, Pid} ->
 		    Pid ! {login, Channel, Nick},
-		    server_loop(L);
+		    update_users_list(Nick, Group, Pid, L);
 		error ->
+		    S = self(),
 		    Pid = spawn_link(fun() ->
-					     chat_group:start(Channel, Nick) 
+					     chat_group:start(Channel, Nick, S) 
 				     end),
-		    server_loop([{Group,Pid}|L])
-	    end;
+		    [{Group,Pid, [Nick]}|L]
+	    end,
+	    notify_updated_users(L1),
+	    server_loop(L1);
 	{mm_closed, _} ->
 	    server_loop(L); 
+	{logout, Pid, User} ->
+	    L1 = delete_user_list(User, Pid, L),
+	    notify_updated_users(L1),
+	    server_loop(L1);
 	{'EXIT', Pid, allGone} ->
 	    L1 = remove_group(Pid, L),
+	    notify_updated_users(L1),
 	    server_loop(L1);
 	Msg ->
 	    io:format("Server received Msg=~p~n",
 		      [Msg]),
 	    server_loop(L)
-    end.
+    end. 
 
+get_groups_members(L) -> lists:map(fun({Group, _Pid, Users}) -> {Group, Users} end, L).
 
+notify_updated_users(L) -> 
+    Groups = get_groups_members(L),
+    lists:foreach(fun({_Group, Pid, _Users}) -> Pid ! {update_users, Groups} end, L).
 
-lookup(G, [{G,Pid}|_]) -> {ok, Pid};
+lookup(G, [{G, Pid, _Users}|_]) -> {ok, Pid};
 lookup(G, [_|T])       -> lookup(G, T);
 lookup(_,[])           -> error.
 
-remove_group(Pid, [{G,Pid}|T]) -> io:format("~p removed~n",[G]), T;
+update_users_list(U, G, P, [{G, P, Users}|T]) -> [{G, P, [U | Users]} | T];
+update_users_list(U, G, P, [H|T]) -> [H | update_users_list(U, G, P, T)];
+update_users_list(_U, _G, _P, []) -> [].
+
+delete_user_list(U, P, [{G, P, Users}|T]) -> [{G, P, lists:delete(U, Users)} | T];
+delete_user_list(U, P, [H|T]) -> [H | delete_user_list(U, P, T)];
+delete_user_list(_U, _P, []) -> [].
+
+remove_group(Pid, [{G,Pid, _Users}|T]) -> io:format("~p removed~n",[G]), T;
 remove_group(Pid, [H|T])       -> [H|remove_group(Pid, T)];
 remove_group(_, [])            -> [].
 

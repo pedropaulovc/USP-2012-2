@@ -10,7 +10,8 @@
 
 -import(io_widget, 
 	[get_state/1, insert_str/2, set_prompt/2, set_state/2, 
-	 set_title/2, set_handler/2, update_state/3, update_users/2, whole_group/0]).
+	 set_title/2, set_handler/2, update_state/3, update_users/2, update_groups/2,
+	 whole_group/0]).
 
 -export([start/0, test/0, connect/5]).
 
@@ -23,7 +24,12 @@ test() ->
     connect("localhost", 2223, "AsDT67aQ", "general", "joe"),
     connect("localhost", 2223, "AsDT67aQ", "general", "jane"),
     connect("localhost", 2223, "AsDT67aQ", "general", "jim"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "sue").
+    connect("localhost", 2223, "AsDT67aQ", "general", "sue"),
+	connect("localhost", 2223, "AsDT67aQ", "alternative", "jay"),
+	connect("localhost", 2223, "AsDT67aQ", "alternative", "kay"),
+	connect("localhost", 2223, "AsDT67aQ", "fightclub", "tylerdurden").
+
+%%%	só pra testar, agora tem 3 grupos.
 	   
 
 connect(Host, Port, HostPsw, Group, Nick) ->
@@ -32,71 +38,83 @@ connect(Host, Port, HostPsw, Group, Nick) ->
 handler(Host, Port, HostPsw, Group, Nick) ->
     process_flag(trap_exit, true),
     Widget = io_widget:start(self()),
+%a lista de grupos aparece numa janela separada, chamada GroupWindow
+	GroupWindow = io_widget:start_group_window(self()),
     set_title(Widget, Nick),
     set_state(Widget, Nick),
     set_prompt(Widget, [Nick, " > "]),
     set_handler(Widget, fun parse_command/1),
     start_connector(Host, Port, HostPsw),    
-    disconnected(Widget, Group, Nick).
+% a funcao disconnected tem um parâmetro a mais (o primeiro) pra lidar com o fechamento da janela de grupos
+    disconnected(GroupWindow, Widget, Group, Nick).
 
 
 
-disconnected(Widget, Group, Nick) ->
+disconnected(GroupWindow, Widget, Group, Nick) ->
     receive
 	{connected, MM} ->
 	    insert_str(Widget, "connected to server\nsending data\n"),
 	    lib_chan_mm:send(MM, {login, Group, Nick}),
-	    wait_login_response(Widget, MM);
+	    wait_login_response(GroupWindow, Widget, MM, Group);
 	{Widget, destroyed} ->
 	    exit(died);
 	{status, S} ->
 	    insert_str(Widget, to_str(S)),
-	    disconnected(Widget, Group, Nick);
+	    disconnected(GroupWindow, Widget, Group, Nick);
 	Other ->
 	    io:format("chat_client disconnected unexpected:~p~n",[Other]),
-	    disconnected(Widget, Group, Nick)
+	    disconnected(GroupWindow, Widget, Group, Nick)
     end.
 
 
 
-wait_login_response(Widget, MM) ->
+wait_login_response(GroupWindow, Widget, MM, Group) ->
     receive
 	{chan, MM, ack} ->
-	    active(Widget, MM);
+	    active(GroupWindow, Widget, MM, Group);
 	Other ->
 	    io:format("chat_client login unexpected:~p~n",[Other]),
-	    wait_login_response(Widget, MM)
+	    wait_login_response(GroupWindow, Widget, MM, Group)
     end. 
 
 
 
-active(Widget, MM) ->
+active(GroupWindow, Widget, MM, Group) ->
      WholeGroup = whole_group(),
      receive
 	 {Widget, From, WholeGroup, Str} ->
 	     lib_chan_mm:send(MM, {relay, From, Str}),
-	     active(Widget, MM);
+	     active(GroupWindow, Widget, MM, Group);
 	 {Widget, From, To, Str} ->
 	     lib_chan_mm:send(MM, {private, From, To, Str}),
-	     active(Widget, MM);
-	 {chan, MM, {msg, _From, _Pid, {users, Users}}} ->
+	     active(GroupWindow, Widget, MM, Group);
+	 {chan, MM, {update_users, Groups}} ->
+	     Users = get_users(Group, Groups),
 	     update_users(Widget, Users),
-	     active(Widget, MM);
+	     update_groups(GroupWindow, Groups),
+	     active(GroupWindow, Widget, MM, Group);
 	 {chan, MM, {msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", Str, "\n"]),
-	     active(Widget, MM);
+	     active(GroupWindow, Widget, MM, Group);
 	 {chan, MM, {private_msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", "*private* ", Str, "\n"]),
-	     active(Widget, MM);
+	     active(GroupWindow, Widget, MM, Group);
 	 {'EXIT',Widget,windowDestroyed} ->
-	     lib_chan_mm:close(MM);
+	     lib_chan_mm:close(MM),
+	     exit(GroupWindow, kill);
+	 {'EXIT',GroupWindow,windowDestroyed} ->
+	     lib_chan_mm:close(MM),
+	     exit(Widget, kill);
 	 {close, MM} ->
 	     exit(serverDied);
 	 Other ->
 	     io:format("chat_client active unexpected:~p~n",[Other]),
-	     active(Widget, MM)
+	     active(GroupWindow, Widget, MM, Group)
      end. 
 
+get_users(Group, [{Group, Users}|_]) -> Users;
+get_users(Group, [_|T]) -> get_users(Group, T);
+get_users(_Group, []) -> [].
 
 
 start_connector(Host, Port, Pwd) ->
