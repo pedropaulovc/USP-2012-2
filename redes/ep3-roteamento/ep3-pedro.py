@@ -1,20 +1,28 @@
 #! /usr/bin/python
 #-*- coding: utf-8 -*-
-'''
+"""
 Aluno: Pedro Paulo Vezzá Campos - 7538743
 MAC0448-2012 - Programação para Redes de Computadores
 Tarefa 3: Protocolos de Roteamento
-'''
+"""
 
 from sys import argv, exit
 from Dijkstra import *
 
 class Simulador(object):
-	'''
-	Documentacao
-	'''
+	"""
+	Classe responsável por atuar como interface em modo texto para a realizacão
+	de consultas as tabelas de roteamento de cada um dos roteadores definidos.
+	Ainda, e responsavel por gerar os eventos de atualizacao das tabelas dos
+	roteadores, passando a se comunicarem para atingir para convergirem as rotas
+	otimas.
+	"""
 
 	def __init__(self, adj):
+		"""
+		Construtor e unico metodo da classe Simulador. Realiza as tarefas de 
+		interface e geracao de eventos descritos acima.
+		"""
 		self._roteadores = []
 		for i in range(len(adj)):
 			self._roteadores.append(Roteador(i))
@@ -34,30 +42,31 @@ class Simulador(object):
 		print "ok. Mapa da rede:"
 		print "\n".join(map(lambda r: r.__repr__(), self._roteadores))
 		
-		print "== Iniciando roteamento link-state: =="
+		print "== Iniciando roteamento estado enlace: =="
 		print "Iniciando anuncio do estado atual:"
 		for r in self._roteadores:
-			r.anunciar_estado()
+			r.anunciar_ee()
 		print "Anuncio do estado atual completo."
 		print "Calculando tabelas de roteamento:"
 		for r in self._roteadores:
-			r.calcular_tabela_roteamento_linkstate()
+			r.calcular_tabela_roteamento_ee()
 		print "Tabelas de roteamento calculadas."
-		print "== Roteamento link-state completo. =="
-		print "== Iniciando roteamento distance-vector: =="
+		print "== Roteamento estado enlace completo. =="
+		print "== Iniciando roteamento vetor distancia: =="
 		print "Iniciando anuncio dos vetores distancia para atraso"
 		for r in self._roteadores:
-			r.anunciar_vetor_distancia('a')
+			r.anunciar_vd('a')
 		print "Encerrado anuncio dos vetores distancia para atraso"
 		print "Iniciando anuncio dos vetores distancia para numero de hops"
 		for r in self._roteadores:
-			r.anunciar_vetor_distancia('h')
+			r.anunciar_vd('h')
 		print "Encerrado anuncio dos vetores distancia para numero de hops"
-		print "== Roteamento distance-vector completo. =="
+		print "== Roteamento vetor distancia completo. =="
+		print "== Roteadores prontos para consultas =="
 		
 		while True:
 			s = raw_input('> ')
-			if s.strip() == "exit":
+			if s.strip() == "exit" or s.strip() == "quit":
 				exit()
 			comando = s.split()
 			
@@ -81,52 +90,83 @@ class Simulador(object):
 				print "Metrica invalida. Utilize 'a' ou 'h'"
 				continue
 			
-			if comando[0] == "ee" and comando[3] == "a":
-				(rota, dist) = self._roteadores[origem].obter_rota_linkstate(destino, False)
-			if comando[0] == "ee" and comando[3] == "h":
-				(rota, dist) = self._roteadores[origem].obter_rota_linkstate(destino, True)
+			if comando[0] == "ee":
+				(rota, dist) = self._roteadores[origem].obter_rota_ee(destino, comando[3])
 			if comando[0] == "vd":
 				(rota, dist) = self._roteadores[origem].obter_rota_vd(destino, comando[3])
 
-			nome_metrica = "milisegundos"
+			nome_metrica = "milisegundo"
 			if comando[3] == "h":
-				nome_metrica = "hops"
+				nome_metrica = "hop"
+			if dist > 1:
+				nome_metrica += "s"
+			
+			if rota == []:
+				print "Nao existe rota entre {0} e {1}".format(origem, destino)
+				continue
 				
 			print "{0} ({1} {2})".format(" ".join(map(lambda r: str(r), rota)), \
 				str(dist), nome_metrica)
 			
 class Roteador(object):
-	'''
-	Documentacao
-	'''
+	"""
+	Classe representante de um roteador. Aqui sao implementados os algoritmos de
+	roteamento baseados no estado do enlace (metodos _ee) e baseados em vetor
+	distancia (metodos _vd)
+	"""
 
 	def __init__(self, ident):
-		self._adj = []
-		self._ident = ident
+		"""
+		Construtor da classe Roteador, apenas é responsavel por inicializar
+		as estruturas de dados utilizadas 
+		"""
 		
-		#Atributos Link-state
-		self._mapa_rede = {ident: {}}
-		self._dist = []
-		self._pred = []
+		self._adj = [] #Roteadores adjacentes na forma [(rot1, custo1, (rot2, custo2), ...]
+		self._ident = ident #ID do roteador
 		
-		#Atributos Distance-vector
-		self._vetor_dist_a = {}
+		#Atributos estado enlace
+		self._mapa_rede = {ident: {}} #Grafo na forma {v1: {w1: c1, w2: c2, ...}, ...}
+		self._dist_a = [] #Vetor que mapeia ID de roteador em atraso total
+		self._dist_h = [] #Vetor que mapeia ID de roteador em num hops total
+		self._pred_a = [] #Vetor que indica o predecessor do roteador r na rota otima p/ atraso
+		self._pred_h = [] #Vetor que indica o predecessor do roteador r na rota otima p/ hops
+		
+		#Atributos vetor distancia
+		#Mapas da forma {r1: (id_prox, custo_tot1), r2: (id_prox, custo_tot2), ...}
+		self._vetor_dist_a = {} 
 		self._vetor_dist_h = {}
 		
-	def get_id(self):
+	def obter_id(self):
+		"""
+		Metodo getter da ID do roteador
+		"""
 		return self._ident
 	
 	def adicionar_adjacente(self, novo, custo):
+		"""
+		Adiciona uma ligacao da forma self -> novo com atraso = custo. Atualiza
+		as estruturas de dados de maneira adequada.
+		"""
 		self._adj.append((novo, custo))
-		self._mapa_rede[self._ident][novo.get_id()] = custo;
-		self._vetor_dist_a[novo.get_id()] = (novo.get_id(), custo)
-		self._vetor_dist_h[novo.get_id()] = (novo.get_id(), 1)
+		self._mapa_rede[self._ident][novo.obter_id()] = custo;
+		self._vetor_dist_a[novo.obter_id()] = (novo.obter_id(), custo)
+		self._vetor_dist_h[novo.obter_id()] = (novo.obter_id(), 1)
 	
-	def anunciar_estado(self):
+	def anunciar_ee(self):
+		"""
+		Informa a todos os roteadores adjacentes o estado das suas conexoes no
+		momento
+		"""
 		for (r, _) in self._adj:
-			r.receber_anuncio(self._ident, self.obter_ids_custos_adj())
+			r.receber_anuncio_ee(self._ident, self.obter_ids_custos_adj())
 	
-	def receber_anuncio(self, ident, adj):
+	def receber_anuncio_ee(self, ident, adj):
+		"""
+		Recebe um anuncio de um roteador adjacente sobre alguma mudanca detectada
+		no estados dos enlaces conhecidos ate entao. Verifica se o grafo dos
+		roteadores esta atualizado. Caso esteja nao faz nada, senao atualiza e
+		informa todos os adjacentes da mudanca.
+		"""
 		if ident in self._mapa_rede:
 			return
 		
@@ -139,9 +179,14 @@ class Roteador(object):
 		print self._mapa_rede
 		
 		for (r, _) in self._adj:
-			r.receber_anuncio(ident, adj)
+			r.receber_anuncio_ee(ident, adj)
 	
-	def calcular_tabela_roteamento_linkstate(self):
+	def calcular_tabela_roteamento_ee(self):
+		"""
+		Uma vez que o grafo da rede esta completo, executa o algoritmo de Dijkstra
+		para determinar e armazenar as rotas otimas com relacao a atraso e
+		numero de hops.
+		"""
 		(self._dist_a, self._pred_a) = Dijkstra(self._mapa_rede, self._ident, use_hops=False)
 		(self._dist_h, self._pred_h) = Dijkstra(self._mapa_rede, self._ident, use_hops=True)
 		
@@ -152,10 +197,18 @@ class Roteador(object):
 		print "Considerando hops:"
 		print (self._dist_h, self._pred_h)
 	
-	def obter_rota_linkstate(self, destino, usando_hops=False):
+	def obter_rota_ee(self, destino, metrica):
+		"""
+		Assume que calcular_tabela_roteamento_ee() ja foi executado, determina
+		e retorna a rota otima e o custo total de acordo com a metrica = 'a' ou 
+		'h' para o destino na forma ([ident, r1, r2, ..., destino], custo).
+		Caso nao haja rota retorna ([], -1)
+		"""
+		if destino not in self._dist_a:
+			return ([], -1)
 		pred = self._pred_a
 		dist = self._dist_a[destino]
-		if usando_hops:
+		if metrica == 'h':
 			pred = self._pred_h
 			dist = self._dist_h[destino]
 		
@@ -167,9 +220,14 @@ class Roteador(object):
 		rota.reverse()
 		return (rota, dist)
 	
-	def anunciar_vetor_distancia(self, tipo):
+	def anunciar_vd(self, metrica):
+		"""
+		Envia a todos os roteadores adjacentes o vetor distancia mais atual que
+		o roteador possui, na forma {dest1: custo1, dest2: custo2, ...} considerando
+		a metrica = 'a' ou 'h'
+		"""
 		vetor_dist = self._vetor_dist_a
-		if tipo == 'h':
+		if metrica == 'h':
 			vetor_dist = self._vetor_dist_h
 
 		anuncio = {}
@@ -180,11 +238,16 @@ class Roteador(object):
 			self._ident, anuncio)
 		
 		for (r, _) in self._adj:
-			r.receber_anuncio_vetor_distancia(self._ident, anuncio, tipo)
+			r.receber_anuncio_vd(self._ident, anuncio, metrica)
 	
-	def receber_anuncio_vetor_distancia(self, origem, anuncio, tipo):
+	def receber_anuncio_vd(self, origem, anuncio, metrica):
+		"""
+		Processa um anuncio recebido de origem utilizando a metrica = 'a' ou 'h'
+		Verifica se o vetor distancia interno deve ser atualizado e somente em
+		caso afirmativo faz a atualizacao e anuncia o novo vetor aos adjacentes.
+		"""
 		vetor_dist = self._vetor_dist_a
-		if tipo == 'h':
+		if metrica == 'h':
 			vetor_dist = self._vetor_dist_h
 		
 		atualizou = False
@@ -209,9 +272,16 @@ class Roteador(object):
 			self._ident, vetor_dist)
 		
 		if atualizou:
-			self.anunciar_vetor_distancia(tipo)
+			self.anunciar_vd(metrica)
 	
 	def obter_rota_vd(self, destino, metrica):
+		"""
+		Consulta proximo roteador na rota otima para a metrica passada ('a' ou
+		'h') pedindo a rota deste roteador ate o destino. Retorna a concatencacao
+		da rota recebida com a id atual junto com o custo total. Caso o destino
+		seja o proprio roteador retorna ([destino], 0) e caso o destino nao conste
+		no vetor distancia retorna ([], -1)
+		"""
 		if destino == self._ident:	
 			return ([self._ident], 0)
 		
@@ -219,11 +289,13 @@ class Roteador(object):
 		if metrica == 'h':
 			vetor_dist = self._vetor_dist_h
 		
-		#TODO: Isso vai dar problema se o grafo for desconexo
+		if destino not in vetor_dist:
+			return ([], -1)
+		
 		(prox, custo) = vetor_dist[destino]
 		
 		for (r, _) in self._adj:
-			if r.get_id() == prox:
+			if r.obter_id() == prox:
 				rprox = r
 				break
 		
@@ -233,12 +305,23 @@ class Roteador(object):
 		return (rota, custo)
 		
 	def __repr__(self):
+		"""
+		Retorna uma representacao textual do roteador, composta por:
+		<ident, [(adj1, custo1), (adj2, custo2), ...]>
+		"""
 		return "<" + str(self._ident) + ", " + str(self.obter_ids_custos_adj()) + ">"
 	
 	def obter_ids_custos_adj(self):
-		return map(lambda (r, c): (r.get_id(), c), self._adj)
+		"""
+		Retorna uma lista contendo pares de id de roteadores adjacentes e seus
+		respectivos custos.
+		"""
+		return map(lambda (r, c): (r.obter_id(), c), self._adj)
 		
 if __name__ == '__main__':
+	"""
+	Trecho main do programa. Le a matriz do arquivo passado e inicia o Simulador.
+	"""
 	if len(argv) == 1:
 		print "Forneca o nome do arquivo a ser utilizado como matriz de adjacencias."
 		print "Ex: {0} roteadores.txt".format(argv[0])
