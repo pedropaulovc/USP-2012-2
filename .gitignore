@@ -14,3 +14,5 @@ octave-core
 *.bst
 *.cls
 *.def
+*.pyc
+*.beam
