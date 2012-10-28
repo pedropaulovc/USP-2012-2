@@ -198,7 +198,7 @@ class Roteador(object):
 		sequencia seq da mensagem ja foi recebido. Se sim, nao faz nada. Senao,
 		repassa a mensagem aos vizinhos e verifica se houve alguma mudanca 
 		no seu proprio estado dos enlaces. Em caso afirmativo envia um 
-		novo anuncio informando da mudanca.
+		novo anuncio informando da mudanca e atualiza a tabela de roteamento.
 		"""
 		if  origem in self._ultima_seq_ee and \
 			seq <= self._ultima_seq_ee[origem]:

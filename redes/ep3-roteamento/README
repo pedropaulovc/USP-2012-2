@@ -1,0 +1,141 @@
+# MAC0448 - 2012 - PROGRAMAÇÃO PARA REDES DE COMPUTADORES
+# EP3: Algoritmos de Roteamento
+
+## Autor
+Pedro Paulo Vezzá Campos - 7538743
+
+
+## Execução
+O programa funciona conforme a especificação passada no enunciado do EP. Aceita
+um parâmetro de execução:
+
+python ep3-pedro.py topologia-rede.txt
+
+ou
+
+$ ./ep3-pedro.py topologia-rede.txt
+
+ - topologia-rede.txt: Matriz de adjacências indicando a topologia da rede que 
+será simulada. 
+
+Após a chamada ao programa serão construidas as tabelas de roteamento de maneira
+distribuída, não havendo uma entidade central que controle a troca de mensagens.
+
+Uma vez que as tabelas de roteamento estejam determinadas o programa passa a 
+aceitar comandos vindos da entrada padrão no formato "<algor> <origem> <destino> 
+<metrica>" ou "exit" e exibe a rota determinada na saída padrão.
+
+Exemplo:
+python ./ep3-pedro.py testes/teste1.txt
+[...]
+ee 2 0 a
+2 4 3 0 (3.0 milisegundos)
+vd 2 0 a
+2 4 3 0 (3.0 milisegundos)
+exit
+
+
+##Arquitetura
+O EP é composto de duas classes: Simulador e Roteador. 
+
+A primeira é responsável por por atuar como interface em modo texto para a 
+realizacão de consultas às tabelas de roteamento de cada um dos roteadores
+definidos. Ainda, realiza as interconexões entre os roteadores segundo a 
+topologia da rede fornecida. Uma vez conectados os roteadores passam a funcionar
+de maneira autonoma na geracao das tabelas de roteamento.
+
+A segunda representa um roteador físico. Aqui sao implementados os algoritmos de
+roteamento baseados no estado do enlace (metodos _ee) e baseados em vetor
+distancia (metodos _vd). Cada roteador é identificado com uma ID que inicia em 0.
+
+
+##Protocolo
+As trocas de mensagens entre os roteadores é feita através de chamada de métodos.
+O funcionamento dos protocolos implementados segue:
+
+###Estado do Enlace
+Uma vez que um roteador detecta que está interconectado com outro roteador
+(Através do método outro.confirmar_conexao(self._ident)) este passa a anunciar
+o estado dos seus enlaces a todos os roteadores adjacentes a ele (Método
+anunciar_ee()). 
+
+Um anúncio do estado do enlace é composto por uma tripla (id, adjacentes, seq)
+onde:
+	 - id: ID do roteador que originou o anúncio
+	 - adjacentes: Lista de pares da forma [(id_adj1, custo1), (id_adj2, custo2), ...] 
+	que indica quais são os roteadores que estão adjacentes ao roteador id
+	e o atraso na comunicação correspondente.
+	 - seq: Número de sequência crescente que funciona como ID do anúncio.
+
+Cada roteador adjacente passa a interpretar o anúncio recebido (Método 
+receber_anuncio_ee()). Neste momento o roteador passa a verificar se o numero de
+sequência seq da mensagem já foi recebido. Se sim, não faz nada. Senão,
+repassa a mensagem aos vizinhos e verifica se houve alguma mudanca 
+no seu proprio estado dos enlaces. Em caso afirmativo envia um 
+novo anuncio informando da mudanca tabela de roteamento (Método 
+calcular_tabela_roteamento_ee()).
+
+A topologia da rede é armazenada internamente em cada roteador como um grafo
+da forma:
+{
+ r1: {adj1: custo1, adj2: custo2, ...}
+ r2: {adj3: custo3, ...}
+ ...
+}
+
+Uma vez que o roteador tenha conhecimento de parte da rede em que se encontra,
+O método calcular_tabela_roteamento_ee() é responsável por executar o algoritmo
+de Dijkstra para determinar e armazenar as rotas otimas com relacao a atraso e
+número de hops.
+
+Como cada roteador tem conhecimento da rede, ele consegue sozinho determinar a
+rota completa dele até outro ponto da rede. Isso é feito utilizando os resultados
+da tabela de roteamento no método obter_rota_ee(destino, metrica)
+
+###Vetor distância
+Novamente, quando um roteador detecta que está interconectado com outro roteador
+este passa a anunciar seus vetores distância a todos os roteadores adjacentes a
+ele através do método anunciar_vd(metrica) onde metrica pode ser 'a' para atraso
+ou 'h' para número de hops.
+
+Um anúncio de vetor distância é composto somente pelo vetor distância e a origem
+do anúncio (adjacente). O vetor é da forma: {dest1: custo1, dest2: custo, ...}
+onde cada dest* é um roteador e custo* é o custo total para rotear um pacote
+da origem até dest*.
+
+Cada roteador adjacente passa a interpretar o anúncio recebido (Método 
+receber_anuncio_vd()). Neste momento o roteador passa a verificar se é possível
+otimizar seu próprio vetor distância interno segundo o algoritmo de Bellman-Ford.
+
+Para cada destino desconhecido até então, o roteador insere no seu vetor distância
+interno a entrada {dest: (origem, custo_ate_origem + custo_recebido)} indicando
+que agora é possível rotear um pacote até dest via origem com custo 
+custo_ate_origem + custo_recebido.
+Para cada destino conhecido, o roteador verifica se é possível otimizar o vetor
+distância atual, checando se custo_ate_origem + custo_recebido < custo_armazenado
+e em caso afirmativo atualiza o vetor distância.
+
+Se houve alguma atualização no vetor distância, é realizado um novo anúncio 
+contendo o vetor distância atualizado do roteador.
+
+Como no algoritmo de vetor distância o roteador não tem mais conhecimento da rota
+completa utilizada, o método obter_rota_vd(destino) tem o trabalho de consultar
+o próximo roteador na rota até destino perguntando a ele qual a rota até o destino.
+Esse processo recursivo se repete até que o roteador destino seja indagado de 
+qual a rota até ele mesmo. Neste momento, responde ([destino], 0) onde 0 é o custo
+intermediário para chegar até o destino. Cada roteador intermediário até a origem
+concatena seu próprio id na rota e atualiza o custo total do roteamento, produzindo
+a rota finalizada.
+
+
+## Testes
+As topologias para os quais o programa foi testado encontram-se no diretório 
+**testes**. Os testes incluem a topologia passada no enunciado, redes 
+desconexas e com custos diferentes nos arcos de ida e volta.
+
+
+## Documentação do código
+A documentação do código produzido para o EP encontra-se diretamente no código
+fonte.
+
+
