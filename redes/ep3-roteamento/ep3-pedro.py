@@ -344,12 +344,13 @@ class Roteador(object):
 		if origem not in vetor_dist:
 			return
 		
-		custo_origem = -1
-		for (r, c) in self._adj:
-			if r.obter_id() == origem:
-				custo_origem = c
-				break
-
+		custo_origem = 1
+		if metrica == 'a':
+			for (r, c) in self._adj:
+				if r.obter_id() == origem:
+					custo_origem = c
+					break
+		
 		if custo_origem == -1:
 			print "ERRO: Nao foi encontrado o roteador {0} nos adjacentes de {1}"\
 				.format(str(origem), self._ident)
