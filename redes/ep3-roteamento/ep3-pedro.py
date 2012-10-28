@@ -27,7 +27,7 @@ class Simulador(object):
 		for i in range(len(adj)):
 			self._roteadores.append(Roteador(i))
 		
-		print "Interconectando roteadores ...",
+		print "Interconectando roteadores."
 		
 		for i in range(len(adj)):
 			for j in range(len(adj[i])):
@@ -39,30 +39,30 @@ class Simulador(object):
 				custo = adj[i][j]
 				origem.adicionar_adjacente(destino, custo)
 
-		print "ok. Mapa da rede:"
+		print "Roteadores interconectados. Mapa da rede: "
 		print "\n".join(map(lambda r: r.__repr__(), self._roteadores))
 		
-		print "== Iniciando roteamento estado enlace: =="
-		print "Iniciando anuncio do estado atual:"
-		for r in self._roteadores:
-			r.anunciar_ee()
-		print "Anuncio do estado atual completo."
-		print "Calculando tabelas de roteamento:"
-		for r in self._roteadores:
-			r.calcular_tabela_roteamento_ee()
-		print "Tabelas de roteamento calculadas."
-		print "== Roteamento estado enlace completo. =="
-		print "== Iniciando roteamento vetor distancia: =="
-		print "Iniciando anuncio dos vetores distancia para atraso"
-		for r in self._roteadores:
-			r.anunciar_vd('a')
-		print "Encerrado anuncio dos vetores distancia para atraso"
-		print "Iniciando anuncio dos vetores distancia para numero de hops"
-		for r in self._roteadores:
-			r.anunciar_vd('h')
-		print "Encerrado anuncio dos vetores distancia para numero de hops"
-		print "== Roteamento vetor distancia completo. =="
-		print "== Roteadores prontos para consultas =="
+#		print "== Iniciando roteamento estado enlace: =="
+#		print "Iniciando anuncio do estado atual:"
+#		for r in self._roteadores:
+#			r.anunciar_ee()
+#		print "Anuncio do estado atual completo."
+#		print "Calculando tabelas de roteamento:"
+#		for r in self._roteadores:
+#			r.calcular_tabela_roteamento_ee()
+#		print "Tabelas de roteamento calculadas."
+#		print "== Roteamento estado enlace completo. =="
+#		print "== Iniciando roteamento vetor distancia: =="
+#		print "Iniciando anuncio dos vetores distancia para atraso"
+#		for r in self._roteadores:
+#			r.anunciar_vd('a')
+#		print "Encerrado anuncio dos vetores distancia para atraso"
+#		print "Iniciando anuncio dos vetores distancia para numero de hops"
+#		for r in self._roteadores:
+#			r.anunciar_vd('h')
+#		print "Encerrado anuncio dos vetores distancia para numero de hops"
+#		print "== Roteamento vetor distancia completo. =="
+#		print "== Roteadores prontos para consultas =="
 		
 		while True:
 			s = raw_input('> ')
@@ -125,16 +125,25 @@ class Roteador(object):
 		self._ident = ident #ID do roteador
 		
 		#Atributos estado enlace
-		self._mapa_rede = {ident: {}} #Grafo na forma {v1: {w1: c1, w2: c2, ...}, ...}
-		self._dist_a = [] #Vetor que mapeia ID de roteador em atraso total
-		self._dist_h = [] #Vetor que mapeia ID de roteador em num hops total
-		self._pred_a = [] #Vetor que indica o predecessor do roteador r na rota otima p/ atraso
-		self._pred_h = [] #Vetor que indica o predecessor do roteador r na rota otima p/ hops
+		#Grafo na forma {v1: {w1: c1, w2: c2, ...}, ...}
+		self._mapa_rede = {ident: {}} 
+		#Vetor que mapeia ID de roteador em atraso total
+		self._dist_a = [] 
+		#Vetor que mapeia ID de roteador em num hops total
+		self._dist_h = [] 
+		#Vetor que indica o predecessor do roteador r na rota otima p/ atraso
+		self._pred_a = [] 
+		#Vetor que indica o predecessor do roteador r na rota otima p/ hops
+		self._pred_h = [] 
+		#Mapa que indica qual o ultimo numero de sequencia de anuncio recebido
+		self._ultima_seq_ee = {ident: 0} 
 		
 		#Atributos vetor distancia
 		#Mapas da forma {r1: (id_prox, custo_tot1), r2: (id_prox, custo_tot2), ...}
 		self._vetor_dist_a = {} 
 		self._vetor_dist_h = {}
+		self._vetor_dist_tmp = {} #Conexoes ainda nao completas
+		
 		
 	def obter_id(self):
 		"""
@@ -147,39 +156,94 @@ class Roteador(object):
 		Adiciona uma ligacao da forma self -> novo com atraso = custo. Atualiza
 		as estruturas de dados de maneira adequada.
 		"""
+		id_novo = novo.obter_id()
+		
+		print "\n{0}: Me conectei a {1} com custo {2}".format(self._ident, \
+		id_novo, custo) 
+		
 		self._adj.append((novo, custo))
-		self._mapa_rede[self._ident][novo.obter_id()] = custo;
-		self._vetor_dist_a[novo.obter_id()] = (novo.obter_id(), custo)
-		self._vetor_dist_h[novo.obter_id()] = (novo.obter_id(), 1)
+		self._mapa_rede[self._ident][id_novo] = custo;
+		if id_novo not in self._mapa_rede:
+			self._mapa_rede[id_novo] = {}
+		
+		confirmou = novo.confirmar_conexao(self._ident)	
+		if confirmou:
+			print "{0}: {1} confirmou a conexao.".format(self._ident, id_novo)
+			print "{0}: Anunciando mapa.".format(self._ident)
+			self.anunciar_ee()
+			print "{0}: Fim anuncio de novo mapa.".format(self._ident)
+			print "{0}: Anunciando vetor distancia 'a'.".format(self._ident)
+			if id_novo in self._vetor_dist_a:
+				(prox_atual, custo_atual) = self._vetor_dist_a[id_novo]
+				if custo < custo_atual :
+					self._vetor_dist_a[id_novo] = (id_novo, custo)
+			else:
+				self._vetor_dist_a[id_novo] = (id_novo, custo)
+			self.anunciar_vd('a')
+			print "{0}: Fim anuncio vetor distancia 'a'.".format(self._ident)
+			print "{0}: Anunciando vetor distancia 'h'.".format(self._ident)
+			self._vetor_dist_h[id_novo] = (id_novo, 1)
+			self.anunciar_vd('h')
+			print "{0}: Fim anuncio vetor distancia 'h'".format(self._ident)
+		else:
+			self._vetor_dist_tmp[id_novo] = (id_novo, custo)
+			print "{0}: {1} ainda nao confirmou a conexao.".format(self._ident, id_novo)
+			
+	def confirmar_conexao(self, ident):
+		return ident in self._mapa_rede and ident in self._mapa_rede[self._ident]
 	
 	def anunciar_ee(self):
 		"""
 		Informa a todos os roteadores adjacentes o estado das suas conexoes no
 		momento
 		"""
+		print "{0}: Atualizando tabela de roteamento ee.".format(self._ident)
+		self.calcular_tabela_roteamento_ee()
+		print "{0}: Fim atualizacao tabela de roteamento ee.".format(self._ident)
+
+		seq = self._ultima_seq_ee[self._ident]
+		self._ultima_seq_ee[self._ident] += 1
 		for (r, _) in self._adj:
-			r.receber_anuncio_ee(self._ident, self.obter_ids_custos_adj())
+			r.receber_anuncio_ee(self._ident, self.obter_ids_custos_adj(), seq)
 	
-	def receber_anuncio_ee(self, ident, adj):
+	def receber_anuncio_ee(self, origem, adj, seq):
 		"""
 		Recebe um anuncio de um roteador adjacente sobre alguma mudanca detectada
 		no estados dos enlaces conhecidos ate entao. Verifica se o grafo dos
 		roteadores esta atualizado. Caso esteja nao faz nada, senao atualiza e
 		informa todos os adjacentes da mudanca.
 		"""
-		if ident in self._mapa_rede:
+		if  origem in self._ultima_seq_ee and \
+			seq <= self._ultima_seq_ee[origem]:
 			return
 		
-		self._mapa_rede[ident] = {}
+		if origem not in self._mapa_rede:
+			self._mapa_rede[origem] = {}
+		
+		novo = {}
 		for (r, c) in adj:
-			self._mapa_rede[ident][r] = c;
-
-		print str(self._ident) + ": Recebi anuncio de " + str(ident) + \
-			" contendo " + str(adj) + " meu novo mapa da rede: "
-		print self._mapa_rede
+			novo[r] = c;
+			if r not in self._mapa_rede: 
+				self._mapa_rede[r] = {}
+		
+		self._ultima_seq_ee[origem] = seq
+		
+		print "{0}: Recebi anuncio {1} de {2} contendo {3}.".format(\
+			str(self._ident), str(seq), str(origem), str(adj))
+			
+		anunciar = (novo != self._mapa_rede[origem])
+		if anunciar:
+			self._mapa_rede[origem] = novo
+			print "Novo mapa: {0}".format(str(self._mapa_rede))
+		else:
+			print "Mapa ja atualizado. Apenas repassando anuncio."
 		
 		for (r, _) in self._adj:
-			r.receber_anuncio_ee(ident, adj)
+			r.receber_anuncio_ee(origem, adj, seq)
+		
+		if anunciar:
+			self.calcular_tabela_roteamento_ee()
+			self.anunciar_ee()
 	
 	def calcular_tabela_roteamento_ee(self):
 		"""
@@ -187,10 +251,10 @@ class Roteador(object):
 		para determinar e armazenar as rotas otimas com relacao a atraso e
 		numero de hops.
 		"""
+		
 		(self._dist_a, self._pred_a) = Dijkstra(self._mapa_rede, self._ident, use_hops=False)
 		(self._dist_h, self._pred_h) = Dijkstra(self._mapa_rede, self._ident, use_hops=True)
 		
-		print str(self._ident) + ": Terminei de calcular as rotas:"
 		print "(Distancias ate os destinos, Predecessor dos destinos na rota)"
 		print "Considerando atraso:"
 		print (self._dist_a, self._pred_a)
@@ -229,7 +293,7 @@ class Roteador(object):
 		vetor_dist = self._vetor_dist_a
 		if metrica == 'h':
 			vetor_dist = self._vetor_dist_h
-
+		
 		anuncio = {}
 		for (dest, (_, custo)) in vetor_dist.items():
 			anuncio[dest] = custo
@@ -251,8 +315,45 @@ class Roteador(object):
 			vetor_dist = self._vetor_dist_h
 		
 		atualizou = False
-		(_, custo_origem) = vetor_dist[origem]
+		
+		#Havia uma conexao sendo iniciada. Como origem enviu anuncio estamos
+		#agora conectados.
+		
+		if metrica == 'h':
+			custo_atual = -1
+			if origem in vetor_dist:
+				(_, custo_atual) = vetor_dist[origem]
+			if custo_atual != 1:
+				vetor_dist[origem] = (origem, 1)
+				atualizou = True
+		
+		if metrica == 'a' and origem in self._vetor_dist_tmp:
+			if origem in vetor_dist:
+				(_, custo_atual) = vetor_dist[origem]
+				(_, custo_tmp) = self._vetor_dist_tmp[origem]
+				if custo_tmp < custo_atual:
+					atualizou = True
+					vetor_dist[origem] = self._vetor_dist_tmp[origem]
+			else:
+				atualizou = True
+				vetor_dist[origem] = self._vetor_dist_tmp[origem]
+			del self._vetor_dist_tmp[origem]
+		
+		#Ainda nao tenho como utilizar origem como caminho pois ha apenas a 
+		#conexao origem -> eu, mas não eu -> origem
+		if origem not in vetor_dist:
+			return
+		
+		custo_origem = -1
+		for (r, c) in self._adj:
+			if r.obter_id() == origem:
+				custo_origem = c
+				break
 
+		if custo_origem == -1:
+			print "ERRO: Nao foi encontrado o roteador {0} nos adjacentes de {1}"\
+				.format(str(origem), self._ident)
+			
 		for (dest, custo) in anuncio.items():
 			if dest == self._ident:
 				continue
@@ -268,11 +369,11 @@ class Roteador(object):
 				vetor_dist[dest] = (origem, custo + custo_origem)
 				atualizou = True
 		
-		print "{0}: atualizei meu vd para {1}".format(\
-			self._ident, vetor_dist)
-		
 		if atualizou:
+			print "{0}: atualizei meu vd para {1}".format(self._ident, vetor_dist)
 			self.anunciar_vd(metrica)
+		else:
+			print "{0}: Nao atualizei meu vd.".format(self._ident)
 	
 	def obter_rota_vd(self, destino, metrica):
 		"""
