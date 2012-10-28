@@ -56,8 +56,32 @@ function [imagem] = equalizar_histograma(imagem)
 			imagem(i, j) = h(imagem(i,j) + 1);
 		endfor
 	endfor
+
+	hist_n = zeros(256, 1);
+	for j = 1 : n
+		for i = 1 : m
+			hist_n(imagem(i,j) + 1) += 1;
+		endfor
+	endfor
+	
+%	imprimir_histogramas(p, hist_n)	
 endfunction
 
+function imprimir_histogramas(original, novo)
+	figure ("visible", "off"); 
+	
+	title('Histograma original');
+	xlabel('Intensidade');
+	ylabel('Contagem');
+	plot([0:255], original);
+	print('hist_original.jpg');
+
+	title('Histograma novo');
+	xlabel('Intensidade');
+	ylabel('Contagem');
+	plot([0:255], novo);
+	print('hist_novo.jpg');
+endfunction
 
 function [final] = suavizar(imagem)
     final = cast(aplicar_convolucao(imagem, [1 2 1; 2 4 2; 1 2 1]/16), "uint8");
@@ -67,12 +91,16 @@ function [final] = suavizar2(imagem)
     final = cast(filter2([1 2 1; 2 4 2; 1 2 1]/16, imagem, "same"), "uint8");
 endfunction
 
-function [final] = aumentar_nitidez(imagem)
-    final = imagem + aplicar_convolucao(imagem, [-1 -1 -1; -1 8 -1; -1 -1 -1]);
+function [final, convolucao] = aumentar_nitidez(imagem)
+	convolucao = aplicar_convolucao(imagem, [-1 -1 -1; -1 8 -1; -1 -1 -1]);
+    final = imagem + convolucao;
+%    imwrite(convolucao, "convolucao.jpg", "jpg");
 endfunction
 
-function [final] = aumentar_nitidez2(imagem)
-    final = imagem + filter2([-1 -1 -1; -1 8 -1; -1 -1 -1], imagem, "same");
+function [final, convolucao] = aumentar_nitidez2(imagem)
+    convolucao = filter2([-1 -1 -1; -1 8 -1; -1 -1 -1], imagem, "same");
+	final = imagem + convolucao;
+%    imwrite(convolucao, "convolucao.jpg", "jpg");
 endfunction
 
 
