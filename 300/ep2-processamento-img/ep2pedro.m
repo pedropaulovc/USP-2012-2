@@ -10,17 +10,20 @@
 function [C] = aplicar_convolucao(A, K)
     [m_A, n_A] = size(A);
     [m_K, n_K] = size(K);
-
+	
+	borda = zeros(m_A + 2, n_A + 2);
+	borda(2 : m_A + 1, 2: n_A + 1) = A;
+	A = borda;
+	m_A += 2;
+	n_A += 2;
+	
     C = zeros(m_A - m_K + 1, n_A - n_K + 1);
 
-    for i = 1 : m_K
-        for j = 1 : n_K
-            xpart = A(m_K-i+1 : m_A-i+1, n_K-j+1 : n_A-j+1);
-            C += xpart * K(i, j);
+    for i = 1 : m_A - 2
+        for j = 1 : n_A - 2
+            C(i, j) = sum(sum(A(i : i + m_K - 1, j : j + m_K - 1) .* K));
         endfor
     endfor
-    
-%    C = rot90(C, 2);
 endfunction
 
 function [imagem] = equalizar_histograma(imagem)
@@ -56,24 +59,20 @@ function [imagem] = equalizar_histograma(imagem)
 endfunction
 
 
-function [imagem] = suavizar(imagem)
-    nova = cast(aplicar_convolucao(imagem, [1 2 1; 2 4 2; 1 2 1]/16), "uint8");
-    imagem(2 : rows(nova) + 1, 2 : columns(nova) + 1) = nova;
+function [final] = suavizar(imagem)
+    final = cast(aplicar_convolucao(imagem, [1 2 1; 2 4 2; 1 2 1]/16), "uint8");
+endfunction
+
+function [final] = suavizar2(imagem)
+    final = cast(filter2([1 2 1; 2 4 2; 1 2 1]/16, imagem, "same"), "uint8");
 endfunction
 
 function [final] = aumentar_nitidez(imagem)
-    imwrite(imagem, "imagem.jpg", "jpg");
-    nova = aplicar_convolucao(imagem, [-1 -1 -1; -1 8 -1; -1 -1 -1]);
-    imwrite(nova, "nova.jpg", "jpg");
-    nova_borda = zeros(rows(nova)+2, columns(nova)+2);
-    nova_borda(2:rows(nova)+1, 2:columns(nova)+1) = nova;
-    imwrite(nova_borda, "nova_borda.jpg", "jpg");
-    final = nova_borda + imagem;
-    imwrite(final, "final.jpg", "jpg");
+    final = imagem + aplicar_convolucao(imagem, [-1 -1 -1; -1 8 -1; -1 -1 -1]);
 endfunction
 
-function [nova] = aumentar_nitidez2(imagem)
-    nova = imagem + filter2([-1 -1 -1; -1 8 -1; -1 -1 -1], imagem, "same");
+function [final] = aumentar_nitidez2(imagem)
+    final = imagem + filter2([-1 -1 -1; -1 8 -1; -1 -1 -1], imagem, "same");
 endfunction
 
 
@@ -81,7 +80,7 @@ if(nargin < 2)
 	fprintf(stderr, "Forneca como argumento ao programa a imagem");
 	fprintf(stderr, "e o metodo a ser aplicado na imagem.\n");
 	fprintf(stderr, "Ex: octave %s -metodo imagem.jpg\n", program_name());
-	fprintf(stderr, "-metodo = -contrast | blur | sharpen\n");
+	fprintf(stderr, "-metodo = -contrast | -blur | -sharpen\n");
     fprintf(stderr, "O programa salva, na pasta de execução do programa,");
 	fprintf(stderr, "o arquivo da imagem processada em formato jpg, de,");
 	fprintf(stderr, "nome igual ao arquivo de entrada, seguido do sufixo");
@@ -104,10 +103,14 @@ endwhile
 nome_final = strcat(argv(){2}(1:inicio_extensao - 1), "-final.jpg");
 
 if(strcmp(argv(){1}, "-contrast"))
-%    nova = equalizar_contraste(original);
+    nova = equalizar_histograma(original);
 elseif(strcmp(argv(){1}, "-blur"))
     nova = suavizar(original);
+elseif(strcmp(argv(){1}, "-blur2"))
+    nova = suavizar2(original);
 elseif(strcmp(argv(){1}, "-sharpen"))
+	nova = aumentar_nitidez(original);
+elseif(strcmp(argv(){1}, "-sharpen2"))
     nova = aumentar_nitidez2(original);
 else
     fprintf(stderr, "Metodo escolhido invalido. Encerrando.\n");
