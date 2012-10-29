@@ -7,6 +7,13 @@
 
 1;
 
+#Responsável por aplicar uma filtragem por convolucao em uma imagem.
+#Equivalente a filter2(K, A, "same")
+#Retorno:
+# C = A imagem filtrada com o kernel K, de mesmo tamanho de A
+#Parâmetros:
+# - A: A imagem original a ser filtrada
+# - K: O kernel a ser aplicado na filtragem
 function [C] = aplicar_convolucao(A, K)
     [m_A, n_A] = size(A);
     [m_K, n_K] = size(K);
@@ -26,6 +33,12 @@ function [C] = aplicar_convolucao(A, K)
     endfor
 endfunction
 
+#Responsável por aumentar o contraste de uma imagem atraves da equalizacao
+#de histograma
+#Retorno:
+# imagem = A imagem filtrada com histograma equalizado
+#Parâmetros:
+# - imagem: A imagem original a ser filtrada
 function [imagem] = equalizar_histograma(imagem)
 	m = rows(imagem);
 	n = columns(imagem);
@@ -67,6 +80,14 @@ function [imagem] = equalizar_histograma(imagem)
 %	imprimir_histogramas(p, hist_n)	
 endfunction
 
+#Funcao auxiliar para impressao de histogramas das imagens antes e depois da 
+#equalizacao do histograma da imagem
+#Retorno:
+# nenhum. Grava no diretorio corrente duas imagens: hist_original.jpg e 
+#hist_novo.jpg contendo os histogramas antes e depois da filtragem
+#Parâmetros:
+# - imagem: O histograma da imagem original
+# - novo: O histograma da imagem nova
 function imprimir_histogramas(original, novo)
 	figure ("visible", "off"); 
 	
@@ -83,26 +104,29 @@ function imprimir_histogramas(original, novo)
 	print('hist_novo.jpg');
 endfunction
 
+#Responsável por aplicar uma filtragem de suavizacao da imagem atraves da 
+#aplicacao de uma filtragem por convolucao com kernel = [1 2 1; 2 4 2; 1 2 1]/16
+#Retorno:
+# final = A imagem suavizada
+#Parâmetros:
+# - imagem: A imagem original a ser filtrada
 function [final] = suavizar(imagem)
     final = cast(aplicar_convolucao(imagem, [1 2 1; 2 4 2; 1 2 1]/16), "uint8");
 endfunction
 
-function [final] = suavizar2(imagem)
-    final = cast(filter2([1 2 1; 2 4 2; 1 2 1]/16, imagem, "same"), "uint8");
-endfunction
-
+#Responsável por aplicar uma filtragem de aumento de nitidez da imagem atraves da 
+#aplicacao de um operador Laplaciano implementado por uma filtragem por
+#convolucao com kernel = [-1 -1 -1; -1 8 -1; -1 -1 -1]
+#Retorno:
+# final = A imagem suavizada
+# convolucao = A imagem intermediaria da aplicacao do operador Laplaciano
+#Parâmetros:
+# - imagem: A imagem original a ser filtrada
 function [final, convolucao] = aumentar_nitidez(imagem)
 	convolucao = aplicar_convolucao(imagem, [-1 -1 -1; -1 8 -1; -1 -1 -1]);
     final = imagem + convolucao;
 %    imwrite(convolucao, "convolucao.jpg", "jpg");
 endfunction
-
-function [final, convolucao] = aumentar_nitidez2(imagem)
-    convolucao = filter2([-1 -1 -1; -1 8 -1; -1 -1 -1], imagem, "same");
-	final = imagem + convolucao;
-%    imwrite(convolucao, "convolucao.jpg", "jpg");
-endfunction
-
 
 if(nargin < 2)
 	fprintf(stderr, "Forneca como argumento ao programa a imagem");
@@ -123,23 +147,24 @@ catch
 	exit();
 end_try_catch
 
+inicio_nome = length(argv(){2});
+while(inicio_nome >= 1 && argv(){2}(inicio_nome) != '/')
+    inicio_nome -= 1;
+endwhile
+
 inicio_extensao = length(argv(){2});
 while(argv(){2}(inicio_extensao) != '.')
     inicio_extensao -= 1;
 endwhile
 
-nome_final = strcat(argv(){2}(1:inicio_extensao - 1), "-final.jpg");
+nome_final = strcat(argv(){2}(inicio_nome + 1:inicio_extensao - 1), "-final.jpg");
 
 if(strcmp(argv(){1}, "-contrast"))
     nova = equalizar_histograma(original);
 elseif(strcmp(argv(){1}, "-blur"))
     nova = suavizar(original);
-elseif(strcmp(argv(){1}, "-blur2"))
-    nova = suavizar2(original);
 elseif(strcmp(argv(){1}, "-sharpen"))
 	nova = aumentar_nitidez(original);
-elseif(strcmp(argv(){1}, "-sharpen2"))
-    nova = aumentar_nitidez2(original);
 else
     fprintf(stderr, "Metodo escolhido invalido. Encerrando.\n");
     exit();
