@@ -34,18 +34,6 @@ private case class Term(coef: Double, exp: Int) {
 			" - "
 		else
 			" + "
-	
-	override def equals(other: Any): Boolean = {
-		if (!(other.isInstanceOf[Term]))
-			false
-		else {
-			val casted = other.asInstanceOf[Term]
-			if (this.coef == casted.coef && this.exp == casted.exp)
-				true
-			else
-				false
-		}
-	}
 }
 
 class Pol private (private val terms: List[Term]) {
@@ -58,15 +46,14 @@ class Pol private (private val terms: List[Term]) {
 	def - (that: Pol): Pol = this + -that  
 	def * (that: Pol): Pol = (that.terms map (x => this * x)).foldLeft (Pol(List()))((a,b) => b + a)
 	def / (that: Pol): Tuple2[Pol, Pol] = {
-		require(!that.terms.isEmpty)
-
-		if (this.degree < that.degree)
-			new Tuple2(Pol(List()), this)
+		if (this.terms.isEmpty)
+			Pol(0)
 		else {
+			if (this.degree < that.degree) new Tuple2(Pol(0), this)
 			val q = Pol (this.terms.head.coef / that.terms.head.coef, this.degree - that.degree)
 			val r = this - (that * q)
-			val t = r / that
-   	     	new Tuple2 (q + t._1, t._2)			
+            val t = r / y
+            new Tuple2 (q + t._1, t._2)			
 		}
 	}
 
@@ -78,13 +65,10 @@ class Pol private (private val terms: List[Term]) {
 	def + (d: Double): Pol = this + Pol (d,0)
 	def - (d: Double): Pol = this - Pol (d,0)
 	def * (d: Double): Pol = Pol (terms map (x => Term(x.coef * d, x.exp)))
-	def / (d: Double): Pol = {
-		require (d != 0)
-		this * (1/d)
-	}
-	
-  // grau, potenciacao e derivacao e integração
-	def degree: Int = if (terms.isEmpty) 0 else	terms.head.exp
+	def / (d: Double): Pol = this * (1/d)
+
+  // grau, potenciacao e derivacao (E INTEGRACAO! HOHOHOHO)
+	def degree: Int = terms.head.exp
 	def ^(n: Int): Pol = {
 		var Acc: Pol = Pol (1,0) // unidade multiplicativa
 		for (i <- 0 until n)
@@ -104,29 +88,10 @@ class Pol private (private val terms: List[Term]) {
 	def apply(x: Double): Double = (terms map (i => i.coef * Math.pow (x,i.exp))).foldLeft(0.0)((a,b) => a+b)
 	
   // composicao do polinomio alvo com outro polinomio
-    def apply(that: Pol): Pol = (terms map (x => (that ^ x.exp) * x.coef)).foldLeft(Pol(0))((a,b) => a + b)
+    def apply(that: Pol): Pol = (terms map (x => x.coef * (that ^ x.exp))) foldLeft (Pol(0))((a,b) => a + b)
 
   // sobrescrita de metodos da classe Any
-	override def equals(other: Any): Boolean = {
-		if ( other.isInstanceOf[Double]) {
-			val casted = Pol(other.asInstanceOf[Double])
-			casted == this
-		}
-		else if ( other.isInstanceOf[Int]) {
-			val casted = Pol(other.asInstanceOf[Int])
-			casted == this
-		}
-		else if(!(other.isInstanceOf[Pol]))
-			false
-		else {
-			val casted = other.asInstanceOf[Pol]
-			if (this.terms == casted.terms)
-				true
-			else
-				false
-		}
-	}
-	
+  // override def equals(other: Any): Boolean
   // override def hashCode: Int
 	override def toString = {
 		if (terms.isEmpty)
@@ -156,7 +121,7 @@ object Pol {
 
   // metodos de fabrica acessiveis para os clientes
 	def apply(coef: Double, exp: Int): Pol = if (coef == 0) new Pol (List()) else new Pol (coef, exp)
-	def apply(coef: Double): Pol = Pol (coef, 0)
+	def apply(coef: Double): Pol = new Pol (coef, 0)
 
   // metodo de fabrica interno (serve apenas para evitar o uso de new)
 	private def apply(terms: List[Term]): Pol = new Pol (terms)
