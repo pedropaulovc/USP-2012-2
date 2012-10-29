@@ -1,0 +1,32 @@
+# MAC0300 - 2012 - MÉTODOS NUMÉRICOS DA ÁLGEBRA LINEAR
+# EP2: Métodos de Processamento de Imagens
+
+## Autor
+Pedro Paulo Vezzá Campos - 7538743
+
+## Execução
+Para executar o programa utilize o seguinte comando:
+
+octave -qf ep2pedro.m -metodo imagem.jpg
+
+ou
+
+./ep2pedro.m -metodo imagem.jpg
+
+Onde:
+
+metodo = contrast | blur | sharpen
+
+Será gerado um arquivo imagem-final.jpg no diretório de execução do programa
+após o processamento usando o filtro escolhido 
+
+## Testes
+O programa teve seu funcionamento correto verificado com imagens exemplo que
+encontram-se no diretório **testes**. Cada uma possui os resultados 
+esperados para cada um dos filtros disponíveis.
+
+## Relatório
+Um relatório comentando a implementação e conceitos utilizados no EP
+encontra-se no arquivo ep2pedro-relatorio.pdf
+
+
