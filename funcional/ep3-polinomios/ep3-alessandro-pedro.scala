@@ -1,3 +1,31 @@
+/*******************************************************************************
+* Alunos: 
+*         Alessandro Calò          - 4325393
+*         Pedro Paulo Vezzá Campos - 7538743
+*
+* MAC0319-2012 - Programação Funcional Contemporânea - EP3: Polinômios como
+* Objetos Funcionais em Scala
+*
+* Sobre o arquivo: Contém toda a implementação requisitada de um polinômio e 
+* suas operações segundo modelo fornecido junto com a especificação do EP.
+*
+* Compatibilidade: Este EP foi implementado em *Scala 2.9.2* Esta versão 
+* encontra-se disponível na Rede Linux na máquina smoker (Sala Aquário).
+* É possível realizar SSH nesta máquina para acesso remoto.
+* 
+* Compilação: Execute scalac ep3-alessandro-pedro.scala ou fsc ep3-alessandro-pedro.scala
+* em uma máquina com Scala versão 2.9.2 ou superior
+* 
+* Execução: Segue o modelo apresentado no enunciado. Não é necessária importação
+* da função de conversão implícita para que funcione a conversão implícita.
+* 
+* Testes: Este EP foi passou em uma bateria de testes que inclui todos os
+* exemplos apresentados no enunciado e mais outros exemplos apresentados no
+* enunciado do EP2 de MAC0122-2010 (Calculadora de Polinômios Esparsos).
+* A bateria de testes pode ser vista em:
+* https://github.com/pedropaulovc/USP-2012-2/blob/master/funcional/ep3-polinomios/PolTests.scala
+*******************************************************************************/
+
 package pfc
 
 import java.text.DecimalFormat
@@ -28,6 +56,7 @@ private case class Term(coef: Double, exp: Int) {
     else
       " + "
 
+  // Implementacao do equals e hashCode segue modelo do Programming in Scala
   override def equals(other: Any) = {
     other match {
       case that: pfc.Term => coef == that.coef && exp == that.exp
@@ -75,18 +104,19 @@ class Pol private (private val terms: List[Term]) {
     this * (1 / d)
   }
 
-  // grau, potenciacao e derivacao e integração
+  // grau, potenciacao e derivacao
   def degree: Int = if (terms.isEmpty) 0 else terms.head.exp
+  
   def ^(n: Int): Pol = {
     require(n >= 0)
     pot(n, Pol(1))
   }
-  
   private def pot(n: Int, acc: Pol): Pol = if (n == 0) acc else pot(n - 1, acc * this)
   
   def deriv: Pol = Pol((terms filter (t => t.exp > 0)) map (x => Term(x.coef * x.exp, x.exp - 1)))
   def ! : Pol = deriv
 
+  // Extra: integracao
   def integ: Pol = Pol(terms map (x => Term(x.coef / (x.exp + 1), x.exp + 1)))
   def unary_~ : Pol = integ
   def integ(a: Double, b: Double): Double = (~this).apply(b) - (~this).apply(a)
@@ -116,6 +146,7 @@ class Pol private (private val terms: List[Term]) {
   // metodo auxiliar que multiplica o polinomio alvo por um termo simples
   private def *(term: Term): Pol = Pol(terms map (x => Term(x.coef * term.coef, x.exp + term.exp)))
 
+  // Implementacao do equals e hashCode segue modelo do Programming in Scala
   override def equals(other: Any) = {
     other match {
       case that: pfc.Pol => terms == that.terms
