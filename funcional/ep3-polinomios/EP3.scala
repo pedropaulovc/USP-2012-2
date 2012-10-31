@@ -62,7 +62,7 @@ class Pol private (private val terms: List[Term]) {
       val q = Pol(this.terms.head.coef / that.terms.head.coef, this.degree - that.degree)
       val r = this - (that * q)
       val t = r / that
-      new Tuple2(q + t._1, t._2)
+      (q + t._1, t._2)
     }
   }
 
@@ -82,10 +82,11 @@ class Pol private (private val terms: List[Term]) {
   // grau, potenciacao e derivacao e integração
   def degree: Int = if (terms.isEmpty) 0 else terms.head.exp
   def ^(n: Int): Pol = {
-    var Acc: Pol = Pol(1, 0) // unidade multiplicativa
-    for (i <- 0 until n)
-      Acc = Acc * this
-    Acc
+    require(n >= 0)
+    if (n == 0)
+      Pol(1)
+    else
+      this * (this^(n - 1))
   }
   def deriv: Pol = this!
   def ! : Pol = Pol((terms filter (t => t.exp > 0)) map (x => Term(x.coef * x.exp, x.exp - 1)))
@@ -151,26 +152,22 @@ object Pol {
   private def apply(terms: List[Term]): Pol = new Pol(terms)
 
   // metodo auxiliar para as operacoes de adicao e subtracao de polinomios
-  private def add(L1: List[Term], L2: List[Term]): List[Term] = soma(L1, L2, Nil)
+  private def add(l1: List[Term], l2: List[Term]): List[Term] = addR(l1, l2, Nil).reverse
 
-  private def soma(L1: List[Term], L2: List[Term], S: List[Term]): List[Term] = {
-    if (L2.size < L1.size)
-      soma(L2, L1, S)
-    else if (L1.isEmpty)
-      S ++ L2
-    else {
-      val H1 = L1.head
-      val H2 = L2.head
-      
-      if (H1.exp > H2.exp)
-        soma(L1.tail, L2, S ++ List(H1))
-      else if (H1.exp < H2.exp)
-        soma(L1, L2.tail, S ++ List(H2))
-      else if (H1.coef + H2.coef == 0)
-        soma(L1.tail, L2.tail, S)
-      else 
-        soma(L1.tail, L2.tail, S ++ List(Term(H1.coef + H2.coef, H1.exp)))
+  private def addR(l1: List[Term], l2: List[Term], s: List[Term]): List[Term] =
+    (l1, l2) match { 
+      case (Nil, _) => l2.reverse ::: s
+      case (_, Nil) => l1.reverse ::: s
+      case (h1 :: l1a, h2 :: l2a) => 
+        if (h1.exp > h2.exp)
+          addR(l1a, l2, h1 :: s)
+        else if (h1.exp < h2.exp)
+          addR(l1, l2a, h2 :: s)
+        else if (h1.coef + h2.coef == 0)
+          addR(l1a, l2a, s)
+        else
+          addR(l1a, l2a, Term(h1.coef + h2.coef, h1.exp) :: s)
     }
-  }
+
 
 }
