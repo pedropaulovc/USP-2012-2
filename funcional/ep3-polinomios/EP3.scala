@@ -52,12 +52,12 @@ class Pol private (private val terms: List[Term]) {
   // aritmetica de polinomios
   def +(that: Pol): Pol = Pol(Pol.add(this.terms, that.terms))
   def -(that: Pol): Pol = this + -that
-  def *(that: Pol): Pol = (that.terms map (x => this * x)).foldLeft(Pol(List()))((a, b) => b + a)
+  def *(that: Pol): Pol = terms.foldLeft(Pol(0))((acc, t) => (that * t) + acc)
   def /(that: Pol): Tuple2[Pol, Pol] = {
     require(!that.terms.isEmpty)
 
     if (this.degree < that.degree)
-      new Tuple2(Pol(List()), this)
+      (Pol(0), this)
     else {
       val q = Pol(this.terms.head.coef / that.terms.head.coef, this.degree - that.degree)
       val r = this - (that * q)
@@ -83,23 +83,22 @@ class Pol private (private val terms: List[Term]) {
   def degree: Int = if (terms.isEmpty) 0 else terms.head.exp
   def ^(n: Int): Pol = {
     require(n >= 0)
-    if (n == 0)
-      Pol(1)
-    else
-      this * (this^(n - 1))
+    pot(n, Pol(1))
   }
-  def deriv: Pol = this!
-  def ! : Pol = Pol((terms filter (t => t.exp > 0)) map (x => Term(x.coef * x.exp, x.exp - 1)))
+  
+  private def pot(n: Int, acc: Pol): Pol = if (n == 0) acc else pot(n - 1, acc * this)
+  
+  def deriv: Pol = Pol((terms filter (t => t.exp > 0)) map (x => Term(x.coef * x.exp, x.exp - 1)))
+  def ! : Pol = deriv
 
-  def integ: Pol = ~this
-  def unary_~ : Pol = Pol(terms map (x => Term(x.coef / (x.exp + 1), x.exp + 1)))
+  def integ: Pol = Pol(terms map (x => Term(x.coef / (x.exp + 1), x.exp + 1)))
+  def unary_~ : Pol = integ
   def integ(a: Double, b: Double): Double = (~this).apply(b) - (~this).apply(a)
 
   // calcula o valor do polinomio alvo para um dado valor de x
-  def apply(x: Double): Double = (terms map (i => i.coef * math.pow(x, i.exp))).foldLeft(0.0)((a, b) => a + b)
-
+  def apply(x: Double): Double = terms.foldLeft(0.0)((acc, t) => t.coef * math.pow(x, t.exp) + acc)
   // composicao do polinomio alvo com outro polinomio
-  def apply(that: Pol): Pol = (terms map (x => (that ^ x.exp) * x.coef)).foldLeft(Pol(0))((a, b) => a + b)
+  def apply(that: Pol): Pol = terms.foldLeft(Pol(0))((acc, t) => (that ^ t.exp) * t.coef + acc)
 
   // override def hashCode: Int
   override def toString = {
@@ -121,13 +120,9 @@ class Pol private (private val terms: List[Term]) {
   // metodo auxiliar que multiplica o polinomio alvo por um termo simples
   private def *(term: Term): Pol = Pol(terms map (x => Term(x.coef * term.coef, x.exp + term.exp)))
 
-  def canEqual(other: Any) = {
-    other.isInstanceOf[pfc.Pol]
-  }
-
   override def equals(other: Any) = {
     other match {
-      case that: pfc.Pol => that.canEqual(Pol.this) && terms == that.terms
+      case that: pfc.Pol => terms == that.terms
       case _ => false
     }
   }
