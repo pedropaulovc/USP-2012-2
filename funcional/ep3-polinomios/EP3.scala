@@ -28,13 +28,9 @@ private case class Term(coef: Double, exp: Int) {
     else
       " + "
 
-  def canEqual(other: Any) = {
-    other.isInstanceOf[pfc.Term]
-  }
-
   override def equals(other: Any) = {
     other match {
-      case that: pfc.Term => that.canEqual(Term.this) && coef == that.coef && exp == that.exp
+      case that: pfc.Term => coef == that.coef && exp == that.exp
       case _ => false
     }
   }
