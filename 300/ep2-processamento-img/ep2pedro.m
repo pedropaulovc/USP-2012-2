@@ -33,6 +33,30 @@ function [C] = aplicar_convolucao(A, K)
     endfor
 endfunction
 
+#Responsável por aplicar uma filtragem por convolucao em uma imagem.
+#Semelhante a funcao anterior com a diferenca que mantem as bordas da imagem
+#filtrada identicas a imagem original
+#Retorno:
+# C = A imagem filtrada com o kernel K, de mesmo tamanho de A
+#Parâmetros:
+# - A: A imagem original a ser filtrada
+# - K: O kernel a ser aplicado na filtragem
+function [C] = aplicar_convolucao_ignora_borda(A, K)
+    [m_A, n_A] = size(A);
+    [m_K, n_K] = size(K);
+	m_K2 = floor(m_K/2);
+	n_K2 = floor(n_K/2);
+
+	C = A;
+
+    for i = 1 + m_K2 : m_A - m_K2
+        for j = 1 + m_K2 : n_A - m_K2
+            C(i, j) = sum(sum(A(i - m_K2 : i + m_K2, j - n_K2 : j + n_K2) .* K));
+        endfor
+    endfor
+endfunction
+
+
 #Responsável por aumentar o contraste de uma imagem atraves da equalizacao
 #de histograma
 #Retorno:
