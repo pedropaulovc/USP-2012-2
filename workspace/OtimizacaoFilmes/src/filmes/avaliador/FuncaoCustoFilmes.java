@@ -9,17 +9,17 @@ import filmes.modelo.FilmeInfo;
 /**
  * Função de custo - Analisa um cromossomo e retorna o melhor custo segundo
  * o preço.
- * @author rodrigo
+ * @author Pedro Paulo
  * Last updated: Apr 14, 2012
  *
  * TODO: Modificar a função de custo (evaluate) para considerar outros fatores
  * na avaliação.
  * 
  * Podem ser utilizados:
- * a) preferência por loja: Por exemplo, Submarino.
- * b) avaliação do usuário: 0 a 10.
- * c) avaliação do EBit: Diamante, Ouro, Prata, Bronze.
- * d) número de comentários dos clientes
+ * a) Quantidade de notas no IMDB ou Rotten Tomatoes
+ * b) Nota ou Tomates Frescos/Podres no Rotten Tomatoes
+ * c) Duracao do Filme
+ * d) Data de Lancamento
  */
 public class FuncaoCustoFilmes extends FitnessFunction {
 

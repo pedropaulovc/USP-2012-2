@@ -19,6 +19,7 @@ import filmes.modelo.FilmeInfo;
  * Gerencia a execução do algoritmo genético
  * 
  * @author rodrigo Last updated: Apr 14, 2012
+ * @author Pedro Paulo, modificado para a versão de filmes
  */
 public class FilmesMain {
 	private static int MAX_ALLOWED_EVOLUTIONS = 50;
@@ -30,8 +31,8 @@ public class FilmesMain {
 	private GeneticoControlador genControlador;
 
 	/**
-	 * Construtor: Configura o algoritmo genético com a lista de compra, no
-	 * caso, uma lista com os códigos dos produtos a serem comprados.
+	 * Construtor: Configura o algoritmo genético as categorias dos filmes
+	 * disponíveis e os filmes em cada categoria.
 	 * 
 	 * @param listaCompra
 	 * @throws Exception
