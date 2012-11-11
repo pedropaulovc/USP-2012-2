@@ -60,6 +60,7 @@ public class FilmesMain {
 		Configuration.resetProperty(Configuration.PROPERTY_FITEVAL_INST);
 		conf.setFitnessEvaluator(new DefaultFitnessEvaluator());
 
+		/* Cromossomo: Conjunto de filmes, 1 de cada categoria */
 		/* Gene: Categoria de filme */
 		/* Alelo: Filmes possíveis */
 		for (List<FilmeInfo> filmes : categorias.values()) {

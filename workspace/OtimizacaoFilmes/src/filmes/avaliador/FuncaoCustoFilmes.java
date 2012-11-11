@@ -20,6 +20,10 @@ import filmes.modelo.FilmeInfo;
  * b) Nota ou Tomates Frescos/Podres no Rotten Tomatoes
  * c) Duracao do Filme
  * d) Data de Lancamento
+ * 
+ * Cuidado! Nem todos filmes tem todos os atributos disponíveis. Para
+ * estes casos, serão retornados valores como 0 para notas ou tempo de 
+ * duração ou a data atual para datas de lançamento desconhecidas. 
  */
 public class FuncaoCustoFilmes extends FitnessFunction {
 
@@ -34,6 +38,13 @@ public class FuncaoCustoFilmes extends FitnessFunction {
         double soma = 0.0;
         for (Gene gene: genes) {
             FilmeInfo f = (FilmeInfo) gene.getAllele();
+
+            //TODO: Incremente aqui a sua funcao de custo. Explore
+            //os atributos que um FilmeInfo possui. No momento a
+            //funcao de custo apenas soma a notas de todos os filmes
+            //do cromossomo para indicar o quão "adaptado" é um 
+            //cromossomo em relacao a outro.
+            
             soma += f.getImdbRating();
         }
 
