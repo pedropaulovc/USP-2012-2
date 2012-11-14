@@ -8,6 +8,7 @@ Tarefa 4: Protocolos de Roteamento Multicast
 
 from sys import argv, exit
 from Dijkstra import *
+from collections import deque
 
 class Simulador(object):
 	"""
@@ -18,7 +19,7 @@ class Simulador(object):
 	maneira autonoma na geracao das tabelas de roteamento.
 	"""
 
-	def __init__(self, adj):
+	def __init__(self, adj, metodo):
 		"""
 		Construtor e unico metodo da classe Simulador. Realiza as tarefas de 
 		interface e interconexao de roteadores como descrito acima.
@@ -61,21 +62,92 @@ class Simulador(object):
 				print "Comando desconhecido. Utilize 'send' ou 'join' ou 'leave'"
 				continue
 			
-			netid = comando[1]
+			netid = int(comando[1])
+			
+			if netid < 0 or netid >= len(self._roteadores):
+				print "netid invalido"
+				continue
 			
 			if comando[0] == "send":
-				pass
+				id_grupo = self._roteadores[netid].iniciar_grupo_multicast()
+				print "Grupo multicast criado com a id %d" % (id_grupo)
+				continue
 				
-			if comando[0] == "join":
-				if len(comando) < 3:
-					print "Comando join e da forma 'join <netid> <group>'"
-					continue
-			if comando[0] == "leave":
-				if len(comando) < 3:
-					print "Comando leave e da forma 'leave <netid> <group>'"
-					continue
-
+			if len(comando) < 3:
+				print "Forneca o grupo que deseja (des)conectar"
+				continue
+					
+			group = int(comando[2])
 			
+			if comando[0] == "join":
+				self._roteadores[netid].conectar_grupo(group)
+				self.exibir_grupo(group, netid)
+				continue
+				
+			if comando[0] == "leave":
+				self._roteadores[netid].desconectar_grupo(group)
+				continue
+		
+#group 0: netid 1 eh a fonte dos dados
+#         netid 3 tem 1 receptor dos dados
+#         netid 4 tem 3 receptores dos dados
+#         netid 6 tem 5 receptores dos dados
+#         netid 7 tem 1 receptor dos dados
+#         ---
+#         arvore raiz: netid 1
+#         arvore nivel 2: netid 2, netid 3
+#         arvore nivel 3: netid 4, netid 7
+#         arvore nivel 4: netid 6
+
+	def exibir_grupo(self, group, netid):
+		id_fonte = self._roteadores[netid]._grupos_multicast_conhecidos[group]
+		self.dfs_exibir_qtd_receptores(id_fonte, id_fonte, group)
+		print "         ---"
+		self.bfs_exibir_arvore(id_fonte, id_fonte, group)
+		
+		
+	def dfs_exibir_qtd_receptores(self, atual, fonte, grupo):
+		interessados = self._roteadores[atual]._grupos_multicast_interessados[grupo]
+		if atual == fonte:
+			print "group %d: netid %d eh a fonte dos dados" % (grupo, fonte)
+		else:
+			qtd_receptores = len(interessados)
+			str_receptor = "receptor"
+			if qtd_receptores > 1:
+				str_receptor += "es"
+			print "         netid %d tem %d %s dos dados" \
+			% (atual, qtd_receptores, str_receptor)
+			
+		for id in interessados:
+			if id == atual:
+				continue
+			self.dfs_exibir_qtd_receptores(id, fonte, grupo)
+	
+	def bfs_exibir_arvore(self, atual, fonte, grupo):
+		bfs = {1: []}
+		fila = deque([(fonte, 1)])
+		
+		while len(fila) > 0:
+			(atual, nivel) = fila.popleft()
+			bfs[nivel].append(atual)
+						
+			interessados = self._roteadores[atual]._grupos_multicast_interessados[grupo]
+			
+			if interessados != set([atual]) and nivel + 1 not in bfs:
+				bfs[nivel + 1] = []
+			
+			for interessado in interessados:
+				if interessado == atual:
+					continue
+				fila.append((interessado, nivel + 1))
+		
+		del bfs[1]
+		print "arvore raiz: netid %d" % (fonte)
+		for nivel in sorted(bfs.keys()):
+			print "         arvore nivel %d: netid %s" % (nivel, \
+			", netid ".join(str(v) for v in bfs[nivel]))
+		
+		
 class Roteador(object):
 	"""
 	Classe representante de um roteador. Aqui sao implementados os algoritmos de
@@ -112,7 +184,68 @@ class Roteador(object):
 		self._vetor_dist_h = {}
 		self._vetor_dist_tmp = {} #Conexoes ainda nao completas
 		
+		self._grupos_multicast_conhecidos = {}; #id_grupo -> origem
+		self._grupos_multicast_interessados = {}; #id_grupo -> set(interessados)
+		self._ultimo_id_multicast = -1;
 		
+		
+	def iniciar_grupo_multicast(self):
+			self._ultimo_id_multicast += 1
+			novo_id = self._ultimo_id_multicast
+			self._grupos_multicast_conhecidos[novo_id] = self._ident
+			self._grupos_multicast_interessados[novo_id] = set([])
+			
+			for (r, _) in self._adj:
+				r.receber_novo_grupo_multicast(novo_id, self._ident)
+			
+			return novo_id
+		
+	def receber_novo_grupo_multicast(self, novo_id, origem):
+		if novo_id <= self._ultimo_id_multicast:
+			return
+		
+		self._ultimo_id_multicast = novo_id
+		self._grupos_multicast_conhecidos[novo_id] = origem
+		
+		print "%d: Recebi novo grupo multicast. Grupos conhecidos: %s" \
+		% (self._ident, self._grupos_multicast_conhecidos)
+
+		for (r, _) in self._adj:
+				r.receber_novo_grupo_multicast(novo_id, origem)
+	
+	def conectar_grupo(self, id_grupo):
+		self._conectar_grupo(id_grupo, self._ident)
+	
+	def _conectar_grupo(self, id_grupo, origem):
+		if id_grupo not in self._grupos_multicast_conhecidos:
+			print "%d: grupo %d desconhecido" % (self._ident, id_grupo)
+			return
+			
+		centro = self._grupos_multicast_conhecidos[id_grupo]
+
+		#O roteador ja faz parte da arvore multicast
+		if id_grupo in self._grupos_multicast_interessados:
+			self._grupos_multicast_interessados[id_grupo].add(origem)
+			print "%d: Atualizando interessados: %s" \
+			% (self._ident, self._grupos_multicast_interessados)
+			return
+		
+		#O roteador nao faz parte da arvore. Propagamos a conexao ate o centro
+		self._grupos_multicast_interessados[id_grupo] = set([origem])
+		
+		print "%d: Entrei na arvore %d. Interessado: %d" \
+		% (self._ident, id_grupo, origem)
+		
+		(prox, _) = self._vetor_dist_a[centro]
+			
+		proximo = None
+		for (r, _) in self._adj:
+			if r.obter_id() == prox:		
+				proximo = r
+		
+		proximo._conectar_grupo(id_grupo, self._ident)
+	
+	
 	def obter_id(self):
 		"""
 		Metodo getter da ID do roteador
@@ -393,7 +526,7 @@ if __name__ == '__main__':
 	"""
 	Trecho main do programa. Le a matriz do arquivo passado e inicia o Simulador.
 	"""
-	if len(argv) == 1:
+	if len(argv) < 3:
 		print "Forneca o nome do arquivo a ser utilizado como matriz de \
 		adjacencias e o metodo utilizado para a montagem das arvores multicast."
 		print "Ex: {0} roteadores.txt shared|source" % (argv[0])
@@ -405,5 +538,5 @@ if __name__ == '__main__':
 			if len(linha.strip()) != 0:
 				matriz.append([float(n) for n in linha.split()])
 
-	Simulador(matriz)
+	Simulador(matriz, argv[2])
 
