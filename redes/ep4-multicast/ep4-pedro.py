@@ -86,18 +86,9 @@ class Simulador(object):
 				
 			if comando[0] == "leave":
 				self._roteadores[netid].desconectar_grupo(group)
+				self.exibir_grupo(group, netid)
 				continue
 		
-#group 0: netid 1 eh a fonte dos dados
-#         netid 3 tem 1 receptor dos dados
-#         netid 4 tem 3 receptores dos dados
-#         netid 6 tem 5 receptores dos dados
-#         netid 7 tem 1 receptor dos dados
-#         ---
-#         arvore raiz: netid 1
-#         arvore nivel 2: netid 2, netid 3
-#         arvore nivel 3: netid 4, netid 7
-#         arvore nivel 4: netid 6
 
 	def exibir_grupo(self, group, netid):
 		id_fonte = self._roteadores[netid]._grupos_multicast_conhecidos[group]
@@ -133,7 +124,8 @@ class Simulador(object):
 						
 			interessados = self._roteadores[atual]._grupos_multicast_interessados[grupo]
 			
-			if interessados != set([atual]) and nivel + 1 not in bfs:
+			if interessados != set([atual]) and interessados != set([]) \
+				and nivel + 1 not in bfs:
 				bfs[nivel + 1] = []
 			
 			for interessado in interessados:
@@ -142,7 +134,7 @@ class Simulador(object):
 				fila.append((interessado, nivel + 1))
 		
 		del bfs[1]
-		print "arvore raiz: netid %d" % (fonte)
+		print "         arvore raiz: netid %d" % (fonte)
 		for nivel in sorted(bfs.keys()):
 			print "         arvore nivel %d: netid %s" % (nivel, \
 			", netid ".join(str(v) for v in bfs[nivel]))
@@ -218,9 +210,9 @@ class Roteador(object):
 	
 	def _conectar_grupo(self, id_grupo, origem):
 		if id_grupo not in self._grupos_multicast_conhecidos:
-			print "%d: grupo %d desconhecido" % (self._ident, id_grupo)
+			print "%d: Grupo %d desconhecido" % (self._ident, id_grupo)
 			return
-			
+
 		centro = self._grupos_multicast_conhecidos[id_grupo]
 
 		#O roteador ja faz parte da arvore multicast
@@ -229,22 +221,67 @@ class Roteador(object):
 			print "%d: Atualizando interessados: %s" \
 			% (self._ident, self._grupos_multicast_interessados)
 			return
-		
+
 		#O roteador nao faz parte da arvore. Propagamos a conexao ate o centro
 		self._grupos_multicast_interessados[id_grupo] = set([origem])
 		
 		print "%d: Entrei na arvore %d. Interessado: %d" \
 		% (self._ident, id_grupo, origem)
 		
-		(prox, _) = self._vetor_dist_a[centro]
+		proximo = self.descobir_proximo_roteador(centro)
+		
+		proximo._conectar_grupo(id_grupo, self._ident)
+	
+	
+	def desconectar_grupo(self, id_grupo):
+		self._desconectar_grupo(id_grupo, self._ident)
+	
+	def _desconectar_grupo(self, id_grupo, origem):
+		if id_grupo not in self._grupos_multicast_conhecidos:
+			print "%d: Grupo %d desconhecido" % (self._ident, id_grupo)
+			return
+		
+		if id_grupo not in self._grupos_multicast_interessados or\
+			(origem == self._ident and self._ident not in \
+			self._grupos_multicast_interessados[id_grupo]):			
+			print "%d: Nao estou conectado ao grupo %d, apenas repasso." \
+			% (self._ident, id_grupo)
+			return
+		
+		
+		print "%d: Netid %d nao esta mais interessado no grupo %d" \
+		% (self._ident, origem, id_grupo)
+		
+		self._grupos_multicast_interessados[id_grupo].remove(origem)
+		
+		centro = self._grupos_multicast_conhecidos[id_grupo]
+		if self._ident == centro:
+			print "%d: Sou o centro do grupo %d. Fim da atualizacao." \
+			% (self._ident, id_grupo)
+			return
+
+		if len(self._grupos_multicast_interessados[id_grupo]) == 0:
+			del self._grupos_multicast_interessados[id_grupo]
+			
+			print "%d: Eu sai do grupo %d. Avisando." % (self._ident, id_grupo)
+			
+			proximo = self.descobir_proximo_roteador(centro)
+		
+			proximo._desconectar_grupo(id_grupo, self._ident)
+		else:
+			print "%d: Ainda tenho outros interessados no grupo %d: %s" \
+			% (self._ident, id_grupo, self._grupos_multicast_interessados[id_grupo])
+			
+	
+	def descobir_proximo_roteador(self, destino):
+		(prox, _) = self._vetor_dist_a[destino]
 			
 		proximo = None
 		for (r, _) in self._adj:
 			if r.obter_id() == prox:		
 				proximo = r
-		
-		proximo._conectar_grupo(id_grupo, self._ident)
 	
+		return proximo
 	
 	def obter_id(self):
 		"""
