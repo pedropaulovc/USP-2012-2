@@ -81,20 +81,20 @@ class Simulador(object):
 			
 			if comando[0] == "join":
 				self._roteadores[netid].conectar_grupo(group)
-				self.exibir_grupo(group, netid)
+				self.exibir_grupos(netid)
 				continue
 				
 			if comando[0] == "leave":
 				self._roteadores[netid].desconectar_grupo(group)
-				self.exibir_grupo(group, netid)
+				self.exibir_grupos(netid)
 				continue
 		
 
-	def exibir_grupo(self, group, netid):
-		id_fonte = self._roteadores[netid]._grupos_multicast_conhecidos[group]
-		self.dfs_exibir_qtd_receptores(id_fonte, id_fonte, group)
-		print "         ---"
-		self.bfs_exibir_arvore(id_fonte, id_fonte, group)
+	def exibir_grupos(self, netid):
+		for grupo, id_fonte in self._roteadores[netid]._grupos_multicast_conhecidos.iteritems():
+			self.dfs_exibir_qtd_receptores(id_fonte, id_fonte, grupo)
+			print "         ---"
+			self.bfs_exibir_arvore(id_fonte, id_fonte, grupo)
 		
 		
 	def dfs_exibir_qtd_receptores(self, atual, fonte, grupo):
@@ -219,7 +219,7 @@ class Roteador(object):
 		if id_grupo in self._grupos_multicast_interessados:
 			self._grupos_multicast_interessados[id_grupo].add(origem)
 			print "%d: Atualizando interessados: %s" \
-			% (self._ident, self._grupos_multicast_interessados)
+			% (self._ident, self._grupos_multicast_interessados[id_grupo])
 			return
 
 		#O roteador nao faz parte da arvore. Propagamos a conexao ate o centro
