@@ -1,0 +1,155 @@
+Questão 1:
+	 - Tabelas de roteamento imediatamente após a conexão dos enlaces:
+	
+	|    x   |    y   |    z   |
+	|x: 0, - |x: 5, x |x: 1, x |
+	|y: 5, y |y: 0, - |y: 2, y |
+	|z: 1, z |z: 2, z |z: 0, - |
+	
+		Legenda: "a: 6, b" significa que o custo total para chegar ao nó "a" é de 6 e o próximo hop é "b".
+	
+	 - x anuncia seu vetor-distância (VD) a y e z: 
+		[(y, 5), (z, 1)]
+
+		 - y verifica se há algum melhor caminho:
+		 	Para x:     5 < 5 ? Não
+			Para y: 5 + 5 < 0 ? Não
+			Para z: 1 + 5 < 2 ? Não
+		
+			Não houve atualização. y não envia um novo VD aos vizinhos
+		
+		 - z verifica se há algum melhor caminho:
+		 	Para x:     1 < 1 ? Não
+			Para y: 5 + 1 < 2 ? Não
+			Para z: 1 + 1 < 0 ? Não
+
+			Não houve atualização. z não envia um novo VD aos vizinhos
+	 - y anuncia seu VD a x e z:
+	 	[(x, 5), (z, 2)]
+
+		 - x verifica se há algum melhor caminho:
+			Para x: 5 + 5 < 0 ? Não
+			Para y:     5 < 5 ? Não
+			Para z: 2 + 5 < 1 ? Não
+		
+			Não houve atualização. x não envia um novo VD aos vizinhos
+		
+		 - z verifica se há algum melhor caminho:
+			Para x: 5 + 2 < 1 ? Não
+			Para y:     2 < 2 ? Não
+			Para z: 2 + 2 < 0 ? Não
+
+			Não houve atualização. z não envia um novo VD aos vizinhos
+
+	 - z anuncia seu VD a x e y:
+	 	[(x, 1), (y, 2)]
+
+		 - x verifica se há algum melhor caminho:
+			Para x: 1 + 1 < 0 ? Não
+			Para y: 2 + 1 < 5 ? Sim!
+			Para z:     1 < 1 ? Não
+		
+			x atualizou sua tabela de roteamento:
+				|    x   |
+				|x: 0, - |
+				|y: 3, z |
+				|z: 1, z |
+		
+		 - y verifica se há algum melhor caminho:
+			Para x: 1 + 2 < 5 ? Sim!
+			Para y: 2 + 2 < 0 ? Não
+			Para z:     1 < 1 ? Não
+
+			y atualizou sua tabela de roteamento:
+				|    y   |
+				|x: 3, z |
+				|y: 0, - |
+				|z: 2, z |
+	
+	 - x anuncia seu (VD) a y e z: 
+		[(y, 3), (z, 1)]
+
+		 - y verifica se há algum melhor caminho:
+			Para x:     5 < 3 ? Não
+			Para y: 3 + 5 < 0 ? Não
+			Para z: 1 + 5 < 2 ? Não
+		
+			Não houve atualização. y não envia um novo VD aos vizinhos
+		
+		 - z verifica se há algum melhor caminho:
+		 	Para x:     1 < 1 ? Não
+			Para y: 5 + 1 < 2 ? Não
+			Para z: 1 + 1 < 0 ? Não
+
+			Não houve atualização. z não envia um novo VD aos vizinhos
+
+	 - y anuncia seu VD a x e z:
+	 	[(x, 3), (z, 2)]
+
+		 - x verifica se há algum melhor caminho:
+			Para x: 3 + 5 < 0 ? Não
+			Para y:     5 < 3 ? Não
+			Para z: 2 + 5 < 1 ? Não
+		
+			Não houve atualização. x não envia um novo VD aos vizinhos
+		
+		 - z verifica se há algum melhor caminho:
+			Para x: 3 + 2 < 1 ? Não
+			Para y:     2 < 2 ? Não
+			Para z: 2 + 2 < 0 ? Não
+
+			Não houve atualização. z não envia um novo VD aos vizinhos
+
+	 - Tabelas de roteamento finais:
+	
+	|    x   |    y   |    z   |
+	|x: 0, - |x: 3, z |x: 1, x |
+	|y: 3, z |y: 0, - |y: 2, y |
+	|z: 1, z |z: 2, z |z: 0, - |
+	
+
+
+Questão 2:
+
+	Trecho 1:
+		IP Origem    : 192.168.1.1
+		IP Destino   : 74.125.47.106
+		Porta Origem : Porta alta (Ex: 44000)
+		Porta Destino: 80
+	Trecho 2:
+		IP Origem    : 200.1.1.1
+		IP Destino   : 74.125.47.106
+		Porta Origem : Porta alta NAT (Ex: 55000)
+		Porta Destino: 80
+	Trecho 3:
+		IP Origem    : 74.125.47.106
+		IP Destino   : 200.1.1.1
+		Porta Origem : 80
+		Porta Destino: Porta alta NAT (Ex: 55000)
+	Trecho 4:
+		IP Origem    : 74.125.47.106
+		IP Destino   : 192.168.1.1
+		Porta Origem : 80
+		Porta Destino: Porta alta (Ex: 44000)
+		
+	           Tabela de tradução NAT 
+	    Lado da Wan       |     Lado da LAN
+	IP Destino (Porta)    | IP Interno (Porta)
+	----------------------+--------------------
+	74.125.47.106 (55000) | 192.168.1.1 (44000)
+
+Questão 4:
+	A principal vantagem para servidores de vídeo é a diminuição da capacidade computacional (Processamento e largura de banda) necessária para que o serviço de vídeo seja fornecido aos usuários.
+	Caso a transmissão fosse feita via unicast, para cada novo usuário conectado é necessário alocar recursos suficientes no transmissor do vídeo para que este novo usuário receba uma cópia do conteúdo produzido. Já em uma transmissão multicast, o trabalho de replicar o fluxo dos dados é distrubuído entre os nós intermediários da rede que fazem parte da rota para os usuários interessados. 
+	
+Questão 5:
+	O Slotted Aloha é um protocolo de acesso compartilhado síncrono enquanto o CSMA/CD é assíncrono. Ainda, o Slotted Aloha não faz detecção do meio antes de transmitir enquanto o CSMA/CD verifica se uma transmissão está ocorrendo antes de transmitir. Por fim, o Slotted Aloha não faz detecção de colisão, continuando a transmitir mesmo que tenha detectado um problema. Já o CSMA/CD interrompe a transmissão assim que detecta uma colisão.
+
+	O funcionamento do Slotted Aloha é o seguinte:
+		Todos os nós que compartilham um meio estão sincronizados por um mesmo relógio. O tempo é dividido em slots de mesmo tamanho e suficientes para transmitir um único quadro.
+		Um transmissor que deseja fazer uso do meio aguarda o início de um slot e inicia a transmissão. Caso não ocorra colisão é possível continuar transmitindo em slots subsequentes. Mas caso ocorra colisão, todos os nós detectam. Neste momento, os que ainda tem que transmitir dados vão, com probabilidade p, tentar retransmitir em slots seguintes. Este processo se repete até que todos tenham terminado de transmitir.
+		
+	O funcionamento do CSMA/CD é o seguinte:
+		Não há mais sincronização entre os nós, agora é possível transmitir um quadro a qualquer momento. Porém, antes disso, o nó que desejar iniciar uma transmissão deve escutar o meio e aguardar que o canal esteja aparentemente vazio.
+		Mesmo durante a transmissão do quadro, o transmissor deve continuar a monitorar o meio para verificar se houve uma colisão. Caso ela seja detectada, os nós envolvidos abortam a transmissão do quadro no meio dela e enviam um sinal de congestionamento, um padrão binário definido ("Jam signal"). Posteriormente, os transmissores aguardam um tempo aleatório ("backoff") antes de tentar transmitir novamente. Este tempo é aumentado à medida que ocorram novas colisões.
+		
