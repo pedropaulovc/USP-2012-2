@@ -24,9 +24,11 @@ class Simulador(object):
 		Construtor e unico metodo da classe Simulador. Realiza as tarefas de 
 		interface e interconexao de roteadores como descrito acima.
 		"""
+		self._mc_metodo = metodo
+		self._mc_rendezvous = 0
 		self._roteadores = []
 		for i in range(len(adj)):
-			self._roteadores.append(Roteador(i))
+			self._roteadores.append(Roteador(i, metodo, self._mc_rendezvous))
 		
 		print "Simulador: Interconectando roteadores."
 		
@@ -42,6 +44,9 @@ class Simulador(object):
 
 		print "Simulador: Roteadores interconectados. Mapa da rede: "
 		print "\n".join(map(lambda r: r.__repr__(), self._roteadores))
+		if metodo == 'shared':
+			print "Simulador: Árvore compartilhada:"
+			self.exibir_arvore_source(self._mc_rendezvous, -1)
 		
 		while True:
 			s = raw_input()
@@ -92,7 +97,10 @@ class Simulador(object):
 		for grupo, fonte in self._roteadores[netid]._mc_conhecidos.iteritems():
 			self.exibir_qtd_receptores(grupo, fonte)
 			print "         ---"
-			self.exibir_arvore(fonte, grupo)
+			if self._mc_metodo == 'shared':
+				self.exibir_arvore_shared(fonte, grupo)
+			else:
+				self.exibir_arvore_source(fonte, grupo)
 	
 	def imprimir_receptores(self, atual, grupo):
 		qtd = self._roteadores[atual]._mc_receptores[grupo]
@@ -106,7 +114,7 @@ class Simulador(object):
 	
 	def exibir_qtd_receptores(self, grupo, fonte):
 		print "group %d: netid %d eh a fonte dos dados" % (grupo, fonte)
-
+		
 		fila = deque([fonte])
 		
 		while len(fila) > 0:
@@ -114,15 +122,17 @@ class Simulador(object):
 			self.imprimir_receptores(atual, grupo)
 			fila.extend(self._roteadores[atual]._mc_encaminhar[grupo])
 			
-	def exibir_arvore(self, fonte, grupo):
+	def exibir_arvore_source(self, fonte, grupo):
 		bfs = {1: []}
 		fila = deque([(fonte, 1)])
 		
 		while len(fila) > 0:
 			(atual, nivel) = fila.popleft()
 			bfs[nivel].append(atual)
-						
-			interessados = self._roteadores[atual]._mc_encaminhar[grupo]
+			
+			interessados = set([])
+			if grupo in self._roteadores[atual]._mc_encaminhar:
+				interessados = self._roteadores[atual]._mc_encaminhar[grupo]
 			
 			if interessados != set([]) and nivel + 1 not in bfs:
 				bfs[nivel + 1] = []
@@ -136,7 +146,73 @@ class Simulador(object):
 			print "         arvore nivel %d: netid %s" % (nivel, \
 			", netid ".join(str(v) for v in bfs[nivel]))
 		
+		
+	def exibir_arvore_shared(self, fonte, grupo):
+		fonte_ate_centro = []
+		atual = fonte
+		
+		while atual != self._mc_rendezvous:
+			fonte_ate_centro.append(atual)
+			atual = self._roteadores[atual].descobir_proximo_roteador(self._mc_rendezvous).obter_id()
+		
+		fonte_ate_centro.append(self._mc_rendezvous)
+		
+		bfs = {}
+		for i, r in enumerate(reversed(fonte_ate_centro)):
+			bfs[i + 1] = [r]
 
+		bfs[1] = []
+		fila = deque([(self._mc_rendezvous, 1)])
+		visitados = set([])
+		
+		while len(fila) > 0:
+			(atual, nivel) = fila.popleft()
+			if atual in visitados:
+				continue
+				
+			bfs[nivel].append(atual)
+			visitados.add(atual)
+			
+			interessados = set([])
+			if grupo in self._roteadores[atual]._mc_encaminhar:
+				interessados = self._roteadores[atual]._mc_encaminhar[grupo]
+			
+			if interessados != set([]) and nivel + 1 not in bfs:
+				bfs[nivel + 1] = []
+			
+			for interessado in interessados:
+				fila.append((interessado, nivel + 1))
+		
+		
+		fila = deque([(fonte, len(fonte_ate_centro))])
+		while len(fila) > 0:
+			(atual, nivel) = fila.popleft()
+			if atual in visitados:
+				continue
+			
+			if atual not in fonte_ate_centro:
+				if nivel + 2 not in bfs:
+					bfs[nivel + 2] = []
+				bfs[nivel + 2].append(atual)
+			visitados.add(atual)
+			
+			interessados = set([])
+			if grupo in self._roteadores[atual]._mc_encaminhar:
+				interessados = self._roteadores[atual]._mc_encaminhar[grupo]
+			
+			if interessados != set([]) and nivel - 1 not in bfs:
+				bfs[nivel - 1] = []
+			
+			for interessado in interessados:
+				fila.append((interessado, nivel - 1))
+		
+		del bfs[1]
+		print "         arvore raiz: netid %d" % (self._mc_rendezvous)
+		for nivel in sorted(bfs.keys()):
+			print "         arvore nivel %d: netid %s" % (nivel, \
+			", netid ".join(str(v) for v in bfs[nivel]))
+		
+	
 class Roteador(object):
 	"""
 	Classe representante de um roteador. Aqui sao implementados os algoritmos de
@@ -144,7 +220,7 @@ class Roteador(object):
 	distancia (metodos _vd)
 	"""
 
-	def __init__(self, ident):
+	def __init__(self, ident, metodo, rendezvous):
 		"""
 		Construtor da classe Roteador, apenas é responsavel por inicializar
 		as estruturas de dados utilizadas 
@@ -174,12 +250,16 @@ class Roteador(object):
 		self._vetor_dist_h = {}
 		self._vetor_dist_tmp = {} #Conexoes ainda nao completas
 		
+		self._mc_metodo     = metodo
+		
 		self._mc_conhecidos = {} #id_grupo -> origem dos dados
 		self._mc_encaminhar = {} #id_grupo -> destinos
 		self._mc_receptores = {} #id_grupo -> qtd receptores
-		self._mc_conectados = set([])
+		self._mc_conectados = set([]) #set([id_grupo])
 		self._mc_ultimo_grupo = -1
 		
+		self._mc_rendezvous = rendezvous
+		self._mc_pai_shared = None
 		
 	def criar_grupo(self):
 		self._mc_ultimo_grupo += 1
@@ -191,6 +271,7 @@ class Roteador(object):
 		
 		for (r, _) in self._adj:
 			r.receber_novo_grupo_multicast(novo_id, self._ident)
+
 		
 		return novo_id
 	
@@ -219,11 +300,18 @@ class Roteador(object):
 		self._mc_encaminhar[novo_id] = set([])
 		self._mc_receptores[novo_id] = 0
 		
-		print "%d: Recebi novo grupo multicast. Grupos conhecidos: %s" \
-		% (self._ident, self._mc_conhecidos)
-
 		for (r, _) in self._adj:
 				r.receber_novo_grupo_multicast(novo_id, origem)
+
+		print "%d: Recebi novo grupo multicast. Grupos conhecidos: %s" \
+		% (self._ident, self._mc_conhecidos)
+		
+		if self._mc_metodo == 'shared' and self._ident == self._mc_rendezvous:
+			print "%d: Sou o centro da árvore. Vou me conectar à fonte." % (self._ident)
+			self._mc_conectados.add(novo_id)
+			proximo = self.descobir_proximo_roteador(origem)
+			proximo.conectar_fonte_shared(novo_id, self._ident)
+		
 	
 	def conectar_grupo_source(self, grupo):
 		self._conectar_grupo_source(grupo, self._ident)
@@ -238,13 +326,15 @@ class Roteador(object):
 			print "%d: Incrementando quantidade de receptores para %d" \
 			% (self._ident, self._mc_receptores[grupo])
 		
-		centro = self._mc_conhecidos[grupo]
+		centro = self._mc_rendezvous
+		if self._mc_metodo == 'source':
+			centro = self._mc_conhecidos[grupo]
 		
 		#Ja faz parte da arvore multicast
 		if grupo in self._mc_conectados:
 			if origem in self._mc_encaminhar[grupo]:
 				return
-				
+			
 			if origem != self._ident:
 				self._mc_encaminhar[grupo].add(origem)
 				print "%d: Atualizando interessados no grupo %d: %s" \
@@ -264,7 +354,24 @@ class Roteador(object):
 		proximo = self.descobir_proximo_roteador(centro)
 		
 		proximo._conectar_grupo_source(grupo, self._ident)
+
 	
+	def conectar_fonte_shared(self, grupo, origem):
+		if grupo not in self._mc_conhecidos:
+			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
+			return
+		
+		self._mc_conectados.add(grupo)
+		self._mc_encaminhar[grupo].add(origem)
+		fonte = self._mc_conhecidos[grupo]
+		
+		print "%d: Entrei na arvore %d. Interessado: %d" \
+		% (self._ident, grupo, origem)
+
+		if self._ident != fonte:
+			proximo = self.descobir_proximo_roteador(fonte)
+			proximo.conectar_fonte_shared(grupo, self._ident)
+		
 	def desconectar_grupo_source(self, grupo):
 		self._desconectar_grupo_source(grupo, self._ident)
 		
@@ -275,6 +382,12 @@ class Roteador(object):
 
 		if grupo not in self._mc_conectados:
 			print "%d: Não estou conectado ao grupo %d" % (self._ident, grupo)
+			return
+
+		if self._ident == self._mc_rendezvous and len(self._mc_encaminhar[grupo]) == 0\
+		and self._mc_receptores[grupo] == 0:
+			print "%d: Estou aguardando a primeira conexão antes de permitir que o grupo seja removido."\
+			% (self._ident)
 			return
 		
 		if origem == self._ident and self._mc_receptores[grupo] > 0:
@@ -290,13 +403,16 @@ class Roteador(object):
 		if len(self._mc_encaminhar[grupo]) > 0 or self._mc_receptores[grupo] > 0:
 			print "%d: Não desconectei. Ainda há interessados." % (self._ident)
 			return
-		
+
 		print "%d: Sem receptores ou roteadores a repassar pacotes do grupo %d. Desconectando."\
 		% (self._ident, grupo)
 		
 		self._mc_conectados.remove(grupo)
 		
 		centro = self._mc_conhecidos[grupo]
+		if self._mc_metodo == 'shared':
+			centro = self._mc_rendezvous
+		
 		if self._ident == centro:
 			print "%d: Iniciando broadcast informando da remoção do grupo %d"\
 			% (self._ident, grupo)
@@ -306,7 +422,45 @@ class Roteador(object):
 		proximo = self.descobir_proximo_roteador(centro)
 		proximo._desconectar_grupo_source(grupo, self._ident)
 
+	
+	def _atualizar_arvore_shared(self):
+		if self._mc_rendezvous not in self._vetor_dist_a:
+			return
 		
+		proximo = self.descobir_proximo_roteador(self._mc_rendezvous)
+		
+		if self._mc_rendezvous == self._ident:
+			return
+		
+		if self._mc_pai_shared != proximo.obter_id():
+			if self._mc_pai_shared != None:
+				[pai] = [r for (r, _) in self._adj if r.obter_id() == self._mc_pai_shared]
+				print "%d: Descadastrando %d como meu pai na árvore compartilhada"\
+				% (self._ident, self._mc_pai_shared)
+				pai.descadastrar_ramo_shared(self._ident)
+			
+			self._mc_pai_shared = proximo.obter_id()
+
+			print "%d: Atualizando meu pai na árvore compartilhada para %d"\
+			% (self._ident, self._mc_pai_shared)
+			proximo.cadastrar_ramo_shared(self._ident)
+		
+	def cadastrar_ramo_shared(self, origem):
+		if -1 not in self._mc_encaminhar:
+			self._mc_encaminhar[-1] = set([])
+			
+		print "%d: Encaminhando pacotes multicast para %d" % (self._ident, origem)
+		self._mc_encaminhar[-1].add(origem)
+	
+	def descadastrar_ramo_shared(self, origem):
+		if origem not in self._mc_encaminhar[-1]:
+			print "%d: %d não está na minha lista de roteadores a encaminhar pacotes multicast"\
+			% (self._ident, origem)
+			return
+		
+		print "%d: Não encaminho mais pacotes multicast para %d" % (self._ident, origem)
+		self._mc_encaminhar[-1].remove(origem)
+	
 	def descobir_proximo_roteador(self, destino):
 		(prox, _) = self._vetor_dist_a[destino]
 			
@@ -362,9 +516,12 @@ class Roteador(object):
 			self._vetor_dist_h[id_novo] = (id_novo, 1)
 			self.anunciar_vd('h')
 			#print "{0}: Fim anuncio vetor distancia 'h'".format(self._ident)
+			if self._mc_metodo == 'shared':
+				self._atualizar_arvore_shared()
 		else:
 			self._vetor_dist_tmp[id_novo] = (id_novo, custo)
 			#print "{0}: {1} ainda nao confirmou a conexao.".format(self._ident, id_novo)
+
 			
 	def confirmar_conexao(self, ident):
 		"""
@@ -482,6 +639,9 @@ class Roteador(object):
 		#print "\n{0}: Anunciando meu vd: {1}".format(\
 		#	self._ident, anuncio)
 		
+		if self._mc_metodo == 'shared':
+			self._atualizar_arvore_shared()
+		
 		for (r, _) in self._adj:
 			r.receber_anuncio_vd(self._ident, anuncio, metrica)
 	
@@ -545,6 +705,7 @@ class Roteador(object):
 		if atualizou:
 			#print "{0}: atualizei meu vd para {1}".format(self._ident, vetor_dist)
 			self.anunciar_vd(metrica)
+			
 		else:
 			#print "{0}: Nao atualizei meu vd.".format(self._ident)
 			pass
