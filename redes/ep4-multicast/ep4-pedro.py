@@ -42,7 +42,6 @@ class Simulador(object):
 
 		print "Simulador: Roteadores interconectados. Mapa da rede: "
 		print "\n".join(map(lambda r: r.__repr__(), self._roteadores))
-		print "Aguardando consultas as tabelas de roteamento."
 		
 		while True:
 			s = raw_input()
@@ -69,7 +68,7 @@ class Simulador(object):
 				continue
 			
 			if comando[0] == "send":
-				id_grupo = self._roteadores[netid].iniciar_grupo_multicast()
+				id_grupo = self._roteadores[netid].criar_grupo()
 				print "Grupo multicast criado com a id %d" % (id_grupo)
 				continue
 				
@@ -80,41 +79,42 @@ class Simulador(object):
 			group = int(comando[2])
 			
 			if comando[0] == "join":
-				self._roteadores[netid].conectar_grupo(group)
+				self._roteadores[netid].conectar_grupo_source(group)
 				self.exibir_grupos(netid)
 				continue
 				
 			if comando[0] == "leave":
-				self._roteadores[netid].desconectar_grupo(group)
+				self._roteadores[netid].desconectar_grupo_source(group)
 				self.exibir_grupos(netid)
 				continue
-		
-
-	def exibir_grupos(self, netid):
-		for grupo, id_fonte in self._roteadores[netid]._grupos_multicast_conhecidos.iteritems():
-			self.dfs_exibir_qtd_receptores(id_fonte, id_fonte, grupo)
-			print "         ---"
-			self.bfs_exibir_arvore(id_fonte, id_fonte, grupo)
-		
-		
-	def dfs_exibir_qtd_receptores(self, atual, fonte, grupo):
-		interessados = self._roteadores[atual]._grupos_multicast_interessados[grupo]
-		if atual == fonte:
-			print "group %d: netid %d eh a fonte dos dados" % (grupo, fonte)
-		else:
-			qtd_receptores = len(interessados)
-			str_receptor = "receptor"
-			if qtd_receptores > 1:
-				str_receptor += "es"
-			print "         netid %d tem %d %s dos dados" \
-			% (atual, qtd_receptores, str_receptor)
-			
-		for id in interessados:
-			if id == atual:
-				continue
-			self.dfs_exibir_qtd_receptores(id, fonte, grupo)
 	
-	def bfs_exibir_arvore(self, atual, fonte, grupo):
+	def exibir_grupos(self, netid):
+		for grupo, fonte in self._roteadores[netid]._mc_conhecidos.iteritems():
+			self.exibir_qtd_receptores(grupo, fonte)
+			print "         ---"
+			self.exibir_arvore(fonte, grupo)
+	
+	def imprimir_receptores(self, atual, grupo):
+		qtd = self._roteadores[atual]._mc_receptores[grupo]
+		if qtd == 0:
+			return
+			
+		receptores = "receptor"
+		if qtd > 1:
+			receptores += "es"
+		print "         netid %d tem %d %s dos dados" % (atual, qtd, receptores)
+	
+	def exibir_qtd_receptores(self, grupo, fonte):
+		print "group %d: netid %d eh a fonte dos dados" % (grupo, fonte)
+
+		fila = deque([fonte])
+		
+		while len(fila) > 0:
+			atual = fila.pop()
+			self.imprimir_receptores(atual, grupo)
+			fila.extend(self._roteadores[atual]._mc_encaminhar[grupo])
+			
+	def exibir_arvore(self, fonte, grupo):
 		bfs = {1: []}
 		fila = deque([(fonte, 1)])
 		
@@ -122,15 +122,12 @@ class Simulador(object):
 			(atual, nivel) = fila.popleft()
 			bfs[nivel].append(atual)
 						
-			interessados = self._roteadores[atual]._grupos_multicast_interessados[grupo]
+			interessados = self._roteadores[atual]._mc_encaminhar[grupo]
 			
-			if interessados != set([atual]) and interessados != set([]) \
-				and nivel + 1 not in bfs:
+			if interessados != set([]) and nivel + 1 not in bfs:
 				bfs[nivel + 1] = []
 			
 			for interessado in interessados:
-				if interessado == atual:
-					continue
 				fila.append((interessado, nivel + 1))
 		
 		del bfs[1]
@@ -139,7 +136,7 @@ class Simulador(object):
 			print "         arvore nivel %d: netid %s" % (nivel, \
 			", netid ".join(str(v) for v in bfs[nivel]))
 		
-		
+
 class Roteador(object):
 	"""
 	Classe representante de um roteador. Aqui sao implementados os algoritmos de
@@ -170,109 +167,146 @@ class Roteador(object):
 		#Mapa que indica qual o ultimo numero de sequencia de anuncio recebido
 		self._ultima_seq_ee = {ident: 0} 
 		
+		
 		#Atributos vetor distancia
 		#Mapas da forma {r1: (id_prox, custo_tot1), r2: (id_prox, custo_tot2), ...}
 		self._vetor_dist_a = {} 
 		self._vetor_dist_h = {}
 		self._vetor_dist_tmp = {} #Conexoes ainda nao completas
 		
-		self._grupos_multicast_conhecidos = {}; #id_grupo -> origem
-		self._grupos_multicast_interessados = {}; #id_grupo -> set(interessados)
-		self._ultimo_id_multicast = -1;
+		self._mc_conhecidos = {} #id_grupo -> origem dos dados
+		self._mc_encaminhar = {} #id_grupo -> destinos
+		self._mc_receptores = {} #id_grupo -> qtd receptores
+		self._mc_conectados = set([])
+		self._mc_ultimo_grupo = -1
 		
 		
-	def iniciar_grupo_multicast(self):
-			self._ultimo_id_multicast += 1
-			novo_id = self._ultimo_id_multicast
-			self._grupos_multicast_conhecidos[novo_id] = self._ident
-			self._grupos_multicast_interessados[novo_id] = set([])
-			
-			for (r, _) in self._adj:
-				r.receber_novo_grupo_multicast(novo_id, self._ident)
-			
-			return novo_id
+	def criar_grupo(self):
+		self._mc_ultimo_grupo += 1
+		novo_id = self._mc_ultimo_grupo
+		self._mc_conhecidos[novo_id] = self._ident
+		self._mc_encaminhar[novo_id] = set([])
+		self._mc_receptores[novo_id] = 0
+		self._mc_conectados.add(novo_id)
+		
+		for (r, _) in self._adj:
+			r.receber_novo_grupo_multicast(novo_id, self._ident)
+		
+		return novo_id
+	
+	def _remover_grupo(self, grupo):
+		if grupo not in self._mc_conhecidos:
+			return
+
+		del self._mc_conhecidos[grupo]
+		del self._mc_encaminhar[grupo]
+		del self._mc_receptores[grupo]
+		if grupo in self._mc_conectados:
+			self._mc_conectados.remove(grupo)
+		
+		print "%d: Removendo grupo %d. Grupos ainda existentes: %s"\
+		% (self._ident, grupo, self._mc_conhecidos)
+		
+		for (r, _) in self._adj:
+			r._remover_grupo(grupo)
 		
 	def receber_novo_grupo_multicast(self, novo_id, origem):
-		if novo_id <= self._ultimo_id_multicast:
+		if novo_id in self._mc_conhecidos:
 			return
 		
-		self._ultimo_id_multicast = novo_id
-		self._grupos_multicast_conhecidos[novo_id] = origem
+		self._mc_ultimo_grupo = max(novo_id, self._mc_ultimo_grupo)
+		self._mc_conhecidos[novo_id] = origem
+		self._mc_encaminhar[novo_id] = set([])
+		self._mc_receptores[novo_id] = 0
 		
 		print "%d: Recebi novo grupo multicast. Grupos conhecidos: %s" \
-		% (self._ident, self._grupos_multicast_conhecidos)
+		% (self._ident, self._mc_conhecidos)
 
 		for (r, _) in self._adj:
 				r.receber_novo_grupo_multicast(novo_id, origem)
 	
-	def conectar_grupo(self, id_grupo):
-		self._conectar_grupo(id_grupo, self._ident)
+	def conectar_grupo_source(self, grupo):
+		self._conectar_grupo_source(grupo, self._ident)
 	
-	def _conectar_grupo(self, id_grupo, origem):
-		if id_grupo not in self._grupos_multicast_conhecidos:
-			print "%d: Grupo %d desconhecido" % (self._ident, id_grupo)
+	def _conectar_grupo_source(self, grupo, origem):
+		if grupo not in self._mc_conhecidos:
+			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
 			return
-
-		centro = self._grupos_multicast_conhecidos[id_grupo]
-
-		#O roteador ja faz parte da arvore multicast
-		if id_grupo in self._grupos_multicast_interessados:
-			self._grupos_multicast_interessados[id_grupo].add(origem)
-			print "%d: Atualizando interessados: %s" \
-			% (self._ident, self._grupos_multicast_interessados[id_grupo])
-			return
-
-		#O roteador nao faz parte da arvore. Propagamos a conexao ate o centro
-		self._grupos_multicast_interessados[id_grupo] = set([origem])
 		
+		if origem == self._ident:
+			self._mc_receptores[grupo] += 1
+			print "%d: Incrementando quantidade de receptores para %d" \
+			% (self._ident, self._mc_receptores[grupo])
+		
+		centro = self._mc_conhecidos[grupo]
+		
+		#Ja faz parte da arvore multicast
+		if grupo in self._mc_conectados:
+			if origem in self._mc_encaminhar[grupo]:
+				return
+				
+			if origem != self._ident:
+				self._mc_encaminhar[grupo].add(origem)
+				print "%d: Atualizando interessados no grupo %d: %s" \
+				% (self._ident, grupo, self._mc_encaminhar[grupo])
+
+			return
+		
+		self._mc_conectados.add(grupo)
+		
+		#O roteador nao faz parte da arvore. Propagamos a conexao ate o centro
+		if origem != self._ident:
+			self._mc_encaminhar[grupo].add(origem)
+	
 		print "%d: Entrei na arvore %d. Interessado: %d" \
-		% (self._ident, id_grupo, origem)
+		% (self._ident, grupo, origem)
 		
 		proximo = self.descobir_proximo_roteador(centro)
 		
-		proximo._conectar_grupo(id_grupo, self._ident)
+		proximo._conectar_grupo_source(grupo, self._ident)
 	
-	
-	def desconectar_grupo(self, id_grupo):
-		self._desconectar_grupo(id_grupo, self._ident)
-	
-	def _desconectar_grupo(self, id_grupo, origem):
-		if id_grupo not in self._grupos_multicast_conhecidos:
-			print "%d: Grupo %d desconhecido" % (self._ident, id_grupo)
-			return
+	def desconectar_grupo_source(self, grupo):
+		self._desconectar_grupo_source(grupo, self._ident)
 		
-		if id_grupo not in self._grupos_multicast_interessados or\
-			(origem == self._ident and self._ident not in \
-			self._grupos_multicast_interessados[id_grupo]):			
-			print "%d: Nao estou conectado ao grupo %d, apenas repasso." \
-			% (self._ident, id_grupo)
-			return
-		
-		
-		print "%d: Netid %d nao esta mais interessado no grupo %d" \
-		% (self._ident, origem, id_grupo)
-		
-		self._grupos_multicast_interessados[id_grupo].remove(origem)
-		
-		centro = self._grupos_multicast_conhecidos[id_grupo]
-		if self._ident == centro:
-			print "%d: Sou o centro do grupo %d. Fim da atualizacao." \
-			% (self._ident, id_grupo)
+	def _desconectar_grupo_source(self, grupo, origem):
+		if grupo not in self._mc_conhecidos:
+			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
 			return
 
-		if len(self._grupos_multicast_interessados[id_grupo]) == 0:
-			del self._grupos_multicast_interessados[id_grupo]
-			
-			print "%d: Eu sai do grupo %d. Avisando." % (self._ident, id_grupo)
-			
-			proximo = self.descobir_proximo_roteador(centro)
+		if grupo not in self._mc_conectados:
+			print "%d: Não estou conectado ao grupo %d" % (self._ident, grupo)
+			return
 		
-			proximo._desconectar_grupo(id_grupo, self._ident)
-		else:
-			print "%d: Ainda tenho outros interessados no grupo %d: %s" \
-			% (self._ident, id_grupo, self._grupos_multicast_interessados[id_grupo])
-			
-	
+		if origem == self._ident and self._mc_receptores[grupo] > 0:
+			self._mc_receptores[grupo] -= 1
+			print "%d: Decrementando quantidade de receptores para %d" \
+			% (self._ident, self._mc_receptores[grupo])
+		
+		if origem in self._mc_encaminhar[grupo]:
+			self._mc_encaminhar[grupo].remove(origem)
+			print "%d: %d não está mais interessado em %d. Ainda interessados: %s"\
+			% (self._ident, origem, grupo, self._mc_encaminhar[grupo])
+		
+		if len(self._mc_encaminhar[grupo]) > 0 or self._mc_receptores[grupo] > 0:
+			print "%d: Não desconectei. Ainda há interessados." % (self._ident)
+			return
+		
+		print "%d: Sem receptores ou roteadores a repassar pacotes do grupo %d. Desconectando."\
+		% (self._ident, grupo)
+		
+		self._mc_conectados.remove(grupo)
+		
+		centro = self._mc_conhecidos[grupo]
+		if self._ident == centro:
+			print "%d: Iniciando broadcast informando da remoção do grupo %d"\
+			% (self._ident, grupo)
+			self._remover_grupo(grupo)
+			return
+		
+		proximo = self.descobir_proximo_roteador(centro)
+		proximo._desconectar_grupo_source(grupo, self._ident)
+
+		
 	def descobir_proximo_roteador(self, destino):
 		(prox, _) = self._vetor_dist_a[destino]
 			
