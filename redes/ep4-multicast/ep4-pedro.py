@@ -21,7 +21,7 @@ class Simulador(object):
 
 	def __init__(self, adj, metodo):
 		"""
-		Construtor e unico metodo da classe Simulador. Realiza as tarefas de 
+		Construtor da classe Simulador. Realiza as tarefas de 
 		interface e interconexao de roteadores como descrito acima.
 		"""
 		self._mc_metodo = metodo
@@ -89,11 +89,16 @@ class Simulador(object):
 				continue
 				
 			if comando[0] == "leave":
-				self._roteadores[netid].desconectar_grupo_source(group)
+				self._roteadores[netid].desconectar_grupo(group)
 				self.exibir_grupos(netid)
 				continue
 	
 	def exibir_grupos(self, netid):
+		"""
+		Função responsável por exibir os grupos multicast atualmente presentes
+		na rede invocando os métodos de impressão do número de receptores e 
+		a árvore multicast.
+		"""
 		for grupo, fonte in self._roteadores[netid]._mc_conhecidos.iteritems():
 			self.exibir_qtd_receptores(grupo, fonte)
 			print "         ---"
@@ -103,6 +108,10 @@ class Simulador(object):
 				self.exibir_arvore_source(fonte, grupo)
 	
 	def imprimir_receptores(self, atual, grupo):
+		"""
+		Função de impressão de uma linha das quantidades de receptores que um roteador
+		tem.
+		"""
 		qtd = self._roteadores[atual]._mc_receptores[grupo]
 		if qtd == 0:
 			return
@@ -113,6 +122,10 @@ class Simulador(object):
 		print "         netid %d tem %d %s dos dados" % (atual, qtd, receptores)
 	
 	def exibir_qtd_receptores(self, grupo, fonte):
+		"""
+		Função de impressão das quantidades de receptores que cada roteador
+		possui.
+		"""
 		print "group %d: netid %d eh a fonte dos dados" % (grupo, fonte)
 		
 		fila = deque([fonte])
@@ -123,6 +136,9 @@ class Simulador(object):
 			fila.extend(self._roteadores[atual]._mc_encaminhar[grupo])
 			
 	def exibir_arvore_source(self, fonte, grupo):
+		"""
+		Função de impressão de uma árvore multicast segundo o método source.
+		"""
 		bfs = {1: []}
 		fila = deque([(fonte, 1)])
 		
@@ -148,6 +164,10 @@ class Simulador(object):
 		
 		
 	def exibir_arvore_shared(self, fonte, grupo):
+		"""
+		Função de impressão de uma árvore multicast segundo o método shared.
+		"""
+
 		fonte_ate_centro = []
 		atual = fonte
 		
@@ -217,13 +237,16 @@ class Roteador(object):
 	"""
 	Classe representante de um roteador. Aqui sao implementados os algoritmos de
 	roteamento baseados no estado do enlace (metodos _ee) e baseados em vetor
-	distancia (metodos _vd)
+	distancia (metodos _vd) e os métodos de criação da árvore multicast baseada
+	na fonte (métodos _source) e compartilhada (métodos _shared).
 	"""
 
 	def __init__(self, ident, metodo, rendezvous):
 		"""
 		Construtor da classe Roteador, apenas é responsavel por inicializar
-		as estruturas de dados utilizadas 
+		as estruturas de dados utilizadas. O parâmetro ident é o ID do roteador,
+		metodo pode ser 'shared' ou 'source', rendezvous é o centro da árvore
+		para o método de árvore compartilhada.
 		"""
 		
 		self._adj = [] #Roteadores adjacentes na forma [(rot1, custo1, (rot2, custo2), ...]
@@ -256,12 +279,17 @@ class Roteador(object):
 		self._mc_encaminhar = {} #id_grupo -> destinos
 		self._mc_receptores = {} #id_grupo -> qtd receptores
 		self._mc_conectados = set([]) #set([id_grupo])
-		self._mc_ultimo_grupo = -1
+		self._mc_ultimo_grupo = -1 #Ultimo grupo multicast reconhecido.
 		
-		self._mc_rendezvous = rendezvous
-		self._mc_pai_shared = None
+		self._mc_rendezvous = rendezvous #Centro da arvore compartilhada
+		self._mc_pai_shared = None #Roteador pai na arvore compartilhada
 		
 	def criar_grupo(self):
+		"""
+		Função responsável por inicializar um novo grupo multicast no roteador.
+		Inicia um broadcast aos outros roteadores para que tomem conhecimento
+		do novo grupo criado. É independente de método.
+		"""
 		self._mc_ultimo_grupo += 1
 		novo_id = self._mc_ultimo_grupo
 		self._mc_conhecidos[novo_id] = self._ident
@@ -271,11 +299,15 @@ class Roteador(object):
 		
 		for (r, _) in self._adj:
 			r.receber_novo_grupo_multicast(novo_id, self._ident)
-
 		
 		return novo_id
 	
 	def _remover_grupo(self, grupo):
+		"""
+		Função responsável por desalocar as estruturas que representam um grupo
+		multicast no roteador e ainda iniciar um broadcast avisando da remoção
+		do grupo.
+		"""
 		if grupo not in self._mc_conhecidos:
 			return
 
@@ -292,6 +324,10 @@ class Roteador(object):
 			r._remover_grupo(grupo)
 		
 	def receber_novo_grupo_multicast(self, novo_id, origem):
+		"""
+		Cadastra no roteador a presença de um novo grupo multicast na rede de 
+		id novo_id e de fonte dos dados origem.
+		"""
 		if novo_id in self._mc_conhecidos:
 			return
 		
@@ -314,9 +350,19 @@ class Roteador(object):
 		
 	
 	def conectar_grupo_source(self, grupo):
+		"""
+		Função fachada para o método de conexão a um grupo multicast existente.
+		"""
 		self._conectar_grupo_source(grupo, self._ident)
 	
 	def _conectar_grupo_source(self, grupo, origem):
+		"""
+		Contém a lógica para conectar o roteador ao grupo multicast grupo a 
+		pedido do roteador origem. origem pode ser o próprio roteador, neste caso
+		incrementa a quantidade de receptores para o grupo dado. Verifica se o
+		roteador já está na árvore multicast e caso não esteja propaga o pedido
+		até que se atinja a fonte dos dados.
+		"""
 		if grupo not in self._mc_conhecidos:
 			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
 			return
@@ -357,6 +403,11 @@ class Roteador(object):
 
 	
 	def conectar_fonte_shared(self, grupo, origem):
+		"""
+		Função executada pelos roteadores no caminho do centro da árvore compartilhada
+		até a fonte dos dados propriamente dita. Todos estes roteadores passam a
+		integrar a árvore multicast mesmo que não haja receptores ainda.
+		"""
 		if grupo not in self._mc_conhecidos:
 			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
 			return
@@ -372,10 +423,22 @@ class Roteador(object):
 			proximo = self.descobir_proximo_roteador(fonte)
 			proximo.conectar_fonte_shared(grupo, self._ident)
 		
-	def desconectar_grupo_source(self, grupo):
-		self._desconectar_grupo_source(grupo, self._ident)
+	def desconectar_grupo(self, grupo):
+		"""
+		Função de fachada para a desconexão de um receptor de uma transmissão
+		multicast no roteador.
+		"""
+		self._desconectar_grupo(grupo, self._ident)
 		
-	def _desconectar_grupo_source(self, grupo, origem):
+	def _desconectar_grupo(self, grupo, origem):
+		"""
+		Caso a função receba origem == self._ident, representa que um receptor
+		da transmissão multicast deseja desconectar-se, caso contrário indica
+		que um roteador deseja não receber mais a transmissão multicast do grupo
+		grupo. Verifica se ainda há receptores conectados ou roteadores que 
+		dependem deste para receber a transmissão. Caso não haja mais nenhum destes
+		propaga a desconexão para o próximo nó na árvore.
+		"""
 		if grupo not in self._mc_conhecidos:
 			print "%d: Grupo %d desconhecido" % (self._ident, grupo)
 			return
@@ -420,10 +483,17 @@ class Roteador(object):
 			return
 		
 		proximo = self.descobir_proximo_roteador(centro)
-		proximo._desconectar_grupo_source(grupo, self._ident)
+		proximo._desconectar_grupo(grupo, self._ident)
 
 	
 	def _atualizar_arvore_shared(self):
+		"""
+		Função responsável por determinar o caminho a ser seguido deste roteador
+		para o centro da árvore multicast compartilhada. Caso a melhor rota tenha
+		sido alterada, notifica caso necessário o antigo roteador pai na árvore,
+		que deseja desafiliar-se e requisita ao novo roteador na rota ótima 
+		conexão na árvore.
+		"""
 		if self._mc_rendezvous not in self._vetor_dist_a:
 			return
 		
@@ -446,6 +516,10 @@ class Roteador(object):
 			proximo.cadastrar_ramo_shared(self._ident)
 		
 	def cadastrar_ramo_shared(self, origem):
+		"""
+		Função executada pelo novo roteador a se conectar na árvore multicast.
+		Cadatra o roteador origem na árvore compartilhada.
+		"""
 		if -1 not in self._mc_encaminhar:
 			self._mc_encaminhar[-1] = set([])
 			
@@ -453,6 +527,10 @@ class Roteador(object):
 		self._mc_encaminhar[-1].add(origem)
 	
 	def descadastrar_ramo_shared(self, origem):
+		"""
+		Função executada pelo roteador na antiga árvore multicast.
+		Descadastra o roteador origem na árvore compartilhada.
+		"""
 		if origem not in self._mc_encaminhar[-1]:
 			print "%d: %d não está na minha lista de roteadores a encaminhar pacotes multicast"\
 			% (self._ident, origem)
@@ -462,6 +540,10 @@ class Roteador(object):
 		self._mc_encaminhar[-1].remove(origem)
 	
 	def descobir_proximo_roteador(self, destino):
+		"""
+		Função auxiliar para determinar o próximo salto do roteador atual para o
+		roteador destino. Retorna uma referência a esse próximo salto.
+		"""
 		(prox, _) = self._vetor_dist_a[destino]
 			
 		proximo = None
