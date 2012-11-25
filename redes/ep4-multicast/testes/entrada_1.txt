@@ -1,0 +1,17 @@
+send 0
+join 2 0
+join 0 0
+join 1 0
+join 3 0
+join 4 0
+join 5 0
+leave 3 0
+leave 4 0
+join 3 0
+leave 3 0
+leave 2 0
+leave 0 0
+leave 5 0
+leave 1 0
+quit
+

@@ -1,5 +1,5 @@
 # MAC0448 - 2012 - PROGRAMAÇÃO PARA REDES DE COMPUTADORES
-# EP3: Algoritmos de Roteamento
+# EP4: Protocolos de Roteamento Multicast
 
 ## Autor
 Pedro Paulo Vezzá Campos - 7538743
@@ -9,123 +9,121 @@ Pedro Paulo Vezzá Campos - 7538743
 O programa funciona conforme a especificação passada no enunciado do EP. Aceita
 um parâmetro de execução:
 
-python ep3-pedro.py topologia-rede.txt
+python ep4-pedro.py topologia-rede.txt metodo
 
 ou
 
-$ ./ep3-pedro.py topologia-rede.txt
+$ ./ep3-pedro.py topologia-rede.txt metodo
 
  - topologia-rede.txt: Matriz de adjacências indicando a topologia da rede que 
 será simulada. 
+ - metodo: shared|source
 
 Após a chamada ao programa serão construidas as tabelas de roteamento de maneira
 distribuída, não havendo uma entidade central que controle a troca de mensagens.
+Caso metodo tenha seja shared, durante a montagem das tabelas de roteamento
+também é determinada a árvore multicast compartilhada. O centro da árvore
+foi determinado como sendo o promeiro roteador da topologia da rede.
 
 Uma vez que as tabelas de roteamento estejam determinadas o programa passa a 
-aceitar comandos vindos da entrada padrão no formato "<algor> <origem> <destino> 
-<metrica>" ou "exit" e exibe a rota determinada na saída padrão.
-
-Exemplo:
-python ./ep3-pedro.py testes/teste1.txt
-[...]
-ee 2 0 a
-2 4 3 0 (3.0 milisegundos)
-vd 2 0 a
-2 4 3 0 (3.0 milisegundos)
-exit
-
+aceitar comandos vindos da entrada padrão no formato "<comando> <roteador> [<grupo>] "
+ou "exit" e exibe as mensagens e o resultado do processamento conforme a especificação
+do EP.
 
 ##Arquitetura
-O EP é composto de duas classes: Simulador e Roteador. 
+O EP foi feito baseado no EP3 e é composto de duas classes: Simulador e Roteador. 
 
 A primeira é responsável por por atuar como interface em modo texto para a 
 realizacão de consultas às tabelas de roteamento de cada um dos roteadores
-definidos. Ainda, realiza as interconexões entre os roteadores segundo a 
+definidos. Ainda, realiza as interconexões entre os roteadores segundo a ah
 topologia da rede fornecida. Uma vez conectados os roteadores passam a funcionar
-de maneira autonoma na geracao das tabelas de roteamento.
+de maneira autonoma na geracao das tabelas de roteamento. Simulador também é 
+responsável por imprimir o estado atual das árvores multicast conforme determinado
+no EP.
 
 A segunda representa um roteador físico. Aqui sao implementados os algoritmos de
 roteamento baseados no estado do enlace (metodos _ee) e baseados em vetor
-distancia (metodos _vd). Cada roteador é identificado com uma ID que inicia em 0.
+distancia (metodos _vd) úteis para a montagem e atualização das árvore de roteamento
+multicast. Cada roteador é identificado com uma ID que inicia em 0.
 
 
 ##Protocolo
 As trocas de mensagens entre os roteadores é feita através de chamada de métodos.
 O funcionamento dos protocolos implementados segue:
 
-###Estado do Enlace
-Uma vez que um roteador detecta que está interconectado com outro roteador
-(Através do método outro.confirmar_conexao(self._ident)) este passa a anunciar
-o estado dos seus enlaces a todos os roteadores adjacentes a ele (Método
-anunciar_ee()). 
+###Considerações
+O código supõe os enlaces são *simétricos* e o grafo da rede é *conexo*.
 
-Um anúncio do estado do enlace é composto por uma tripla (id, adjacentes, seq)
-onde:
-	 - id: ID do roteador que originou o anúncio
-	 - adjacentes: Lista de pares da forma [(id_adj1, custo1), (id_adj2, custo2), ...] 
-	que indica quais são os roteadores que estão adjacentes ao roteador id
-	e o atraso na comunicação correspondente.
-	 - seq: Número de sequência crescente que funciona como ID do anúncio.
+###Criação de um grupo multicast
+O roteador fonte de uma transmissão multicast determina uma ID de grupo multicast
+que nunca foi utilizada antes (Através de um contador incremental) e em seguida
+produz uma mensagem de broadcast na rede informando do novo grupo criado. Com isso
+todos os roteadores passam a poder mapear um ID de grupo para o ID do roteador fonte.
 
-Cada roteador adjacente passa a interpretar o anúncio recebido (Método 
-receber_anuncio_ee()). Neste momento o roteador passa a verificar se o numero de
-sequência seq da mensagem já foi recebido. Se sim, não faz nada. Senão,
-repassa a mensagem aos vizinhos e verifica se houve alguma mudanca 
-no seu proprio estado dos enlaces. Em caso afirmativo envia um 
-novo anuncio informando da mudanca tabela de roteamento (Método 
-calcular_tabela_roteamento_ee()).
+Caso o método de montagem das árvores multicast seja shared, caso o roteador
+centro (No código _mc_rendezvous) seja diferente da fonte dos dados, este passa
+a utilizar a rota determinada na montagem da árvore compartilhada para conectar-se
+ao roteador fonte. Todos os roteadores no caminho entre o centro e a fonte também
+conectam-se à árvore. Isso garante que quaisquer conexões posteriores de outros
+roteadores ao grupo (Que tem como destino o centro da árvore por definição de
+roteamento por árvore compartilhada) possam ser atendidas.
 
-A topologia da rede é armazenada internamente em cada roteador como um grafo
-da forma:
-{
- r1: {adj1: custo1, adj2: custo2, ...}
- r2: {adj3: custo3, ...}
- ...
-}
 
-Uma vez que o roteador tenha conhecimento de parte da rede em que se encontra,
-O método calcular_tabela_roteamento_ee() é responsável por executar o algoritmo
-de Dijkstra para determinar e armazenar as rotas otimas com relacao a atraso e
-número de hops.
+###Remoção de grupos multicast
+Caso o roteador fonte (No caso source) ou o roteador centro (No caso shared)
+detectem que não há mais receptores conectados ou outros roteadores que necessitem
+dos dados do grupo multicast estes produzem uma mensagem broadcast para informar
+que o grupo deixou de existir e é seguro desalocar todas as estruturas que 
+representem o grupo em cada um dos roteadores.
 
-Como cada roteador tem conhecimento da rede, ele consegue sozinho determinar a
-rota completa dele até outro ponto da rede. Isso é feito utilizando os resultados
-da tabela de roteamento no método obter_rota_ee(destino, metrica)
+###Entrada em grupos multicast
+O algoritmo utilizado segue abaixo.
 
-###Vetor distância
-Novamente, quando um roteador detecta que está interconectado com outro roteador
-este passa a anunciar seus vetores distância a todos os roteadores adjacentes a
-ele através do método anunciar_vd(metrica) onde metrica pode ser 'a' para atraso
-ou 'h' para número de hops.
+(Obs source: A partir do momento que o grupo é criado o roteador fonte já está na árvore.)
 
-Um anúncio de vetor distância é composto somente pelo vetor distância e a origem
-do anúncio (adjacente). O vetor é da forma: {dest1: custo1, dest2: custo, ...}
-onde cada dest* é um roteador e custo* é o custo total para rotear um pacote
-da origem até dest*.
+(Obs shared: Como explicado acima, a partir do momento que o centro passa a tomar
+conhecimento da existência de um novo grupo multicast este se conecta
+à fonte dos dados.)
 
-Cada roteador adjacente passa a interpretar o anúncio recebido (Método 
-receber_anuncio_vd()). Neste momento o roteador passa a verificar se é possível
-otimizar seu próprio vetor distância interno segundo o algoritmo de Bellman-Ford.
+Se o roteador não estiver na árvore:
+	Envie uma requisição de entrada no grupo ao próximo roteador no menor 
+	caminho *com relação ao atraso* até a fonte (source) ou o centro (rendezvous)
+	da árvore compartilhada (shared).
+	
+	//O roteador está agora conectado ao grupo multicast
+Fim se
 
-Para cada destino desconhecido até então, o roteador insere no seu vetor distância
-interno a entrada {dest: (origem, custo_ate_origem + custo_recebido)} indicando
-que agora é possível rotear um pacote até dest via origem com custo 
-custo_ate_origem + custo_recebido.
-Para cada destino conhecido, o roteador verifica se é possível otimizar o vetor
-distância atual, checando se custo_ate_origem + custo_recebido < custo_armazenado
-e em caso afirmativo atualiza o vetor distância.
+Se a requisição veio de um usuário da própria rede (receptor):
+	Incremente o número de usuários conectados no grupo
+Fim se
+	
+Se a requisição veio de um roteador que necessita dos dados:
+	Adicionar o roteador na lista de destinos a terem os pacotes
+	multicast enviados
+Fim se
+	
 
-Se houve alguma atualização no vetor distância, é realizado um novo anúncio 
-contendo o vetor distância atualizado do roteador.
+###Saída de grupos multicast
+O algoritmo utilizado segue abaixo:
 
-Como no algoritmo de vetor distância o roteador não tem mais conhecimento da rota
-completa utilizada, o método obter_rota_vd(destino) tem o trabalho de consultar
-o próximo roteador na rota até destino perguntando a ele qual a rota até o destino.
-Esse processo recursivo se repete até que o roteador destino seja indagado de 
-qual a rota até ele mesmo. Neste momento, responde ([destino], 0) onde 0 é o custo
-intermediário para chegar até o destino. Cada roteador intermediário até a origem
-concatena seu próprio id na rota e atualiza o custo total do roteamento, produzindo
-a rota finalizada.
+Se a requisição veio de um usuário da própria rede (receptor):
+	Decremente o número de usuários conectados no grupo
+Fim se
+	
+Se a requisição veio de um roteador que não necessita mais dos dados:
+	Remover o roteador da lista de destinos a terem os pacotes
+	multicast enviados
+Fim se
+
+Se não há mais receptores ou roteadores que dependem dos dados do grupo multicast:
+	Se o roteador for a fonte (shared) ou o centro (source):
+		Envie uma mensagem broadcast informando do encerramento do grupo.
+	Senão:
+		Envie uma mensagem de desconexão do grupo ao próximo roteador no menor 
+		caminho *com relação ao atraso* até a fonte (source) ou o centro (rendezvous)
+		da árvore compartilhada (shared).
+	Fim se
+Fim se
 
 
 ## Testes

@@ -47,7 +47,8 @@ class Simulador(object):
 		if metodo == 'shared':
 			print "Simulador: Árvore compartilhada:"
 			self.exibir_arvore_source(self._mc_rendezvous, -1)
-		
+		print "Simulador: Aguardando consultas multicast."
+			
 		while True:
 			s = raw_input()
 			if s.strip() == "exit" or s.strip() == "quit":
@@ -84,7 +85,7 @@ class Simulador(object):
 			group = int(comando[2])
 			
 			if comando[0] == "join":
-				self._roteadores[netid].conectar_grupo_source(group)
+				self._roteadores[netid].conectar_grupo(group)
 				self.exibir_grupos(netid)
 				continue
 				
@@ -349,13 +350,13 @@ class Roteador(object):
 			proximo.conectar_fonte_shared(novo_id, self._ident)
 		
 	
-	def conectar_grupo_source(self, grupo):
+	def conectar_grupo(self, grupo):
 		"""
 		Função fachada para o método de conexão a um grupo multicast existente.
 		"""
-		self._conectar_grupo_source(grupo, self._ident)
+		self._conectar_grupo(grupo, self._ident)
 	
-	def _conectar_grupo_source(self, grupo, origem):
+	def _conectar_grupo(self, grupo, origem):
 		"""
 		Contém a lógica para conectar o roteador ao grupo multicast grupo a 
 		pedido do roteador origem. origem pode ser o próprio roteador, neste caso
@@ -399,7 +400,7 @@ class Roteador(object):
 		
 		proximo = self.descobir_proximo_roteador(centro)
 		
-		proximo._conectar_grupo_source(grupo, self._ident)
+		proximo._conectar_grupo(grupo, self._ident)
 
 	
 	def conectar_fonte_shared(self, grupo, origem):

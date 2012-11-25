@@ -1,0 +1,199 @@
+Simulador: Interconectando roteadores.
+1: Atualizando meu pai na árvore compartilhada para 0
+0: Encaminhando pacotes multicast para 1
+2: Atualizando meu pai na árvore compartilhada para 0
+0: Encaminhando pacotes multicast para 2
+3: Atualizando meu pai na árvore compartilhada para 0
+0: Encaminhando pacotes multicast para 3
+2: Descadastrando 0 como meu pai na árvore compartilhada
+0: Não encaminho mais pacotes multicast para 2
+2: Atualizando meu pai na árvore compartilhada para 3
+3: Encaminhando pacotes multicast para 2
+4: Atualizando meu pai na árvore compartilhada para 2
+2: Encaminhando pacotes multicast para 4
+4: Descadastrando 2 como meu pai na árvore compartilhada
+2: Não encaminho mais pacotes multicast para 4
+4: Atualizando meu pai na árvore compartilhada para 3
+3: Encaminhando pacotes multicast para 4
+2: Descadastrando 3 como meu pai na árvore compartilhada
+3: Não encaminho mais pacotes multicast para 2
+2: Atualizando meu pai na árvore compartilhada para 4
+4: Encaminhando pacotes multicast para 2
+5: Atualizando meu pai na árvore compartilhada para 2
+2: Encaminhando pacotes multicast para 5
+5: Descadastrando 2 como meu pai na árvore compartilhada
+2: Não encaminho mais pacotes multicast para 5
+5: Atualizando meu pai na árvore compartilhada para 4
+4: Encaminhando pacotes multicast para 5
+Simulador: Roteadores interconectados. Mapa da rede: 
+<0, [(1, 2.0), (2, 5.0), (3, 1.0)]>
+<1, [(0, 2.0), (2, 3.5), (3, 2.0)]>
+<2, [(0, 5.0), (1, 3.5), (3, 3.0), (4, 1.0), (5, 3.0)]>
+<3, [(0, 1.0), (1, 2.0), (2, 3.0), (4, 1.0)]>
+<4, [(2, 1.0), (3, 1.0), (5, 2.0)]>
+<5, [(2, 3.0), (4, 2.0)]>
+Simulador: Árvore compartilhada:
+         arvore raiz: netid 0
+         arvore nivel 2: netid 1, netid 3
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2, netid 5
+Simulador: Aguardando consultas multicast.
+5: Recebi novo grupo multicast. Grupos conhecidos: {0: 2}
+4: Recebi novo grupo multicast. Grupos conhecidos: {0: 2}
+3: Recebi novo grupo multicast. Grupos conhecidos: {0: 2}
+1: Recebi novo grupo multicast. Grupos conhecidos: {0: 2}
+0: Recebi novo grupo multicast. Grupos conhecidos: {0: 2}
+0: Sou o centro da árvore. Vou me conectar à fonte.
+3: Entrei na arvore 0. Interessado: 0
+4: Entrei na arvore 0. Interessado: 3
+2: Entrei na arvore 0. Interessado: 4
+Grupo multicast criado com a id 0
+2: Incrementando quantidade de receptores para 1
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+3: Incrementando quantidade de receptores para 1
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 3 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+3: Decrementando quantidade de receptores para 0
+3: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+0: Incrementando quantidade de receptores para 1
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+1: Incrementando quantidade de receptores para 1
+1: Entrei na arvore 0. Interessado: 1
+0: Atualizando interessados no grupo 0: set([1])
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+4: Incrementando quantidade de receptores para 1
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 4 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+4: Decrementando quantidade de receptores para 0
+4: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+5: Incrementando quantidade de receptores para 1
+5: Entrei na arvore 0. Interessado: 5
+4: Atualizando interessados no grupo 0: set([3, 5])
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 5 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2, netid 5
+3: Incrementando quantidade de receptores para 1
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 5 tem 1 receptor dos dados
+         netid 3 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2, netid 5
+3: Decrementando quantidade de receptores para 0
+3: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 5 tem 1 receptor dos dados
+         netid 0 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2, netid 5
+0: Decrementando quantidade de receptores para 0
+0: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 5 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2, netid 5
+5: Decrementando quantidade de receptores para 0
+5: Sem receptores ou roteadores a repassar pacotes do grupo 0. Desconectando.
+4: 5 não está mais interessado em 0. Ainda interessados: set([3])
+4: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 2 tem 1 receptor dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+2: Decrementando quantidade de receptores para 0
+2: Não desconectei. Ainda há interessados.
+group 0: netid 2 eh a fonte dos dados
+         netid 1 tem 1 receptor dos dados
+         ---
+         arvore raiz: netid 0
+         arvore nivel 2: netid 3, netid 1
+         arvore nivel 3: netid 4
+         arvore nivel 4: netid 2
+1: Decrementando quantidade de receptores para 0
+1: Sem receptores ou roteadores a repassar pacotes do grupo 0. Desconectando.
+0: 1 não está mais interessado em 0. Ainda interessados: set([])
+0: Sem receptores ou roteadores a repassar pacotes do grupo 0. Desconectando.
+0: Iniciando broadcast informando da remoção do grupo 0
+0: Removendo grupo 0. Grupos ainda existentes: {}
+1: Removendo grupo 0. Grupos ainda existentes: {}
+2: Removendo grupo 0. Grupos ainda existentes: {}
+3: Removendo grupo 0. Grupos ainda existentes: {}
+4: Removendo grupo 0. Grupos ainda existentes: {}
+5: Removendo grupo 0. Grupos ainda existentes: {}
