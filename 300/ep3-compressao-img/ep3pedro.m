@@ -1,12 +1,29 @@
 #!/usr/bin/octave -qf
 
-## MAC0300 - 2012 - MÉTODOS NUMÉROCOS DA ÁLGEBRA LINEAR
+## MAC0300 - 2012 - MÉTODOS NUMÉRICOS DA ÁLGEBRA LINEAR
 ## EP3 - COMPRESSÃO DE IMAGENS USANDO SVD
 ##
 ## ALUNO: PEDRO PAULO VEZZÁ CAMPOS - 7538743
 
 1;
 
+function [A] = golub_kahan(A)
+	m = rows(A);
+	n = columns(A);
+	
+	for k = 1 : n
+		x = A(k : m, k)
+		uk = x + sign(x(1)) * norm(x) * eye(rows(x),1)
+		uk = uk / norm(uk)
+		A(k : m, k : n) = A(k : m, k : n) - 2 * uk * (uk' * A(k : m, k : n))
+		if k <= n - 2
+			x = A(k, k + 1 : n)
+			vk = x + sign(x(1)) * norm(x) * eye(rows(x),1)
+			vk = vk / norm(vk)
+			A(k : m, k + 1 : n) = A(k : m, k + 1 : n) - 2 (A(k : m, k + 1 : n) * vk ) * vk'
+		endif
+	endfor
+endfunction
 
 if(nargin < 3)
 	fprintf(stderr, "Forneca como argumento ao programa a imagem");
@@ -15,7 +32,7 @@ if(nargin < 3)
     fprintf(stderr, "O programa salva, na pasta de execução do programa,");
 	fprintf(stderr, "o arquivo da imagem processada em formato bmp, de,");
 	fprintf(stderr, "nome igual ao arquivo de entrada, seguido do sufixo");
-	fprintf(stderr, "compressed. Exemplo: imagem-compressed.bmp\n");
+	fprintf(stderr, " compressed. Exemplo: imagem-compressed.bmp\n");
 	return;
 endif
 
