@@ -7,7 +7,16 @@
 
 1;
 
-function [comp] = comprimir(img, k)
+#Responsável por decompor uma imagem em seus valores singulares utilizando
+#o algoritmo de Golub-Reinsch implementado e construir uma imagem comprimida
+#utilizando apenas os k maiores valores singulares. 
+#Parâmetros:
+# - img: A imagem original a ser comprimida
+# - k: A quantidade de valores singulares a ser utilizada. k deve pertencer ao
+#intervalo [1..min(m,n)] onde m e n são o número de linhas e colunas de img.
+#Retorno:
+# img = A imagem comprimida
+function [img] = comprimir(img, k)
 	[m, n, d] = size(img);
 	img = double(img);
 	
@@ -19,12 +28,16 @@ function [comp] = comprimir(img, k)
 	for i = 1:d
 		[U,S,V] = golub_reinsch(img(:,:,i));
 		l = min(k, rows(S));
-		comp(:,:,i) = U(:,1:l) * S(1:l,1:l) * V(:,1:l)';
+		img(:,:,i) = U(:,1:l) * S(1:l,1:l) * V(:,1:l)';
 	endfor
 	
-	comp = uint8(comp);
+	img = uint8(img);
 endfunction
 
+#Função de teste do algoritmo de Golub-Reinsch. Gera 3 matrizes, uma alta,
+#uma quadrada e outra larga e aplica o algoritmo SVD implementado. Em seguida,
+#calcula e exibe o número de condicionamento da diferença entre a matriz original
+#e o produto U * S * V'. Os três números devem ser pequenos, no máximo ~1000.
 function testar_svd()
 	A = rand(12,6);
 	[U,S,V] = golub_reinsch(A);
@@ -37,6 +50,18 @@ function testar_svd()
 	cond(A - U * S * V')
 endfunction
 
+#Algoritmo de Golub-Reinsch para SVD. Decompõe uma matriz A qualquer em um produto
+#de três matrizes, A = U * S * V' com as restrições:
+# - A é m x n
+# - U é m x min(m,n) e possui colunas ortogonais
+# - S é min(m,n) x min(m,n) e é uma matriz diagonal contendo da diagonal principal os valores singulares
+# - V é n x min(m,n) e possui colunas ortogonais
+#Parâmetro:
+# - A: A matriz a ser decomposta
+#Retorno:
+# A = Matriz U descrita acima
+# S = Matriz S descrita acima
+# V = Matriz V descrita acima
 function [A, S, V] = golub_reinsch(A)
 	[m, n] = size(A);
 	
