@@ -12,7 +12,7 @@ function [comp] = comprimir(img, k)
 	img = double(img);
 	
 	if k > min(m, n)
-		k = min(m, n)
+		k = min(m, n);
 		printf ("k invalido (Maior que menor das dimensões). Considerando k = %d\n", min(m,n))
 	endif
 
@@ -25,23 +25,15 @@ function [comp] = comprimir(img, k)
 	comp = uint8(comp);
 endfunction
 
-function [res] = sinal(a,b)
-	if b >= 0.0
-		res = abs(a);
-	else
-		res = -abs(a);
-	endif
-endfunction
-
 function testar_svd()
 	A = rand(12,6);
-	[U,S,V] = svdcmp(A);
+	[U,S,V] = golub_reinsch(A);
 	cond(A - U * S * V')
 	A = magic(10);
-	[U,S,V] = svdcmp(A);
+	[U,S,V] = golub_reinsch(A);
 	cond(A - U * S * V')
 	A = rand(6,12);
-	[U,S,V] = svdcmp(A);
+	[U,S,V] = golub_reinsch(A);
 	cond(A - U * S * V')
 endfunction
 
@@ -66,7 +58,7 @@ function [A, S, V] = golub_reinsch(A)
 				s = A(i:m,i)' * A(i:m,i);
 			
 				f = A(i,i);
-				g = -sinal(sqrt(s),f);
+				g = sqrt(s) * -sign(f);
 				h = f * g - s;
 				A(i,i) = f - g;
 				for j = l:n
@@ -87,7 +79,7 @@ function [A, S, V] = golub_reinsch(A)
 				A(i,l:n) /= escala;
 				s = A(i,l:n) * A(i, l:n)';
 				f = A(i,l);
-				g = -sinal(sqrt(s),f);
+				g = sqrt(s) * -sign(f);
 				h = f * g - s;
 				A(i,l) = f - g;
 				tmp(l:n) = A(i,l:n)/h;
@@ -192,7 +184,7 @@ function [A, S, V] = golub_reinsch(A)
 			h = tmp(k);
 			f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
 			g = hypot(f,1.0);
-			f=((x-z)*(x+z)+h*((y/(f+sinal(g,f)))-h))/x;
+			f=((x-z)*(x+z)+h*((y/(f+g*sign(f)))-h))/x;	
 			c = s = 1.0;
 			% Aplicando as transformações de Givens:
 			for j = l:nm
@@ -271,9 +263,8 @@ endwhile
 
 nome_final = strcat(argv(){3}(inicio_nome + 1:inicio_extensao - 1), "-compressed.bmp");
 
-k = argv(){2}
-nova = original;
-
+k = str2double(argv(){2});
+nova = comprimir(original, k);
 
 imwrite(nova, nome_final, "bmp");
 
