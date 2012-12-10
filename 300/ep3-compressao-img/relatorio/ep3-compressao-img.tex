@@ -3,6 +3,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage{url}
 \usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{amssymb}
 \usepackage{amsmath}
@@ -48,7 +50,7 @@ e Estatística \par Universidade de São Paulo}
 \tableofcontents
 
 \chapter{Introdução\label{cap:introducao}}
-	Neste terceiro exercício-programa de MAC0300 - Métodos Numéricos da Álgebra Linear foi pedido que implementássemos um programa que fosse capaz de decompor uma matriz em seus valores singulares (Decomposição SVD) e aplicar tal algoritmo para a compressão de imagens. Neste relatório serão apresentados: Uma explicação e análise sobre SVD e seus algoritmos (Clássico e Golub-Reinsch), testes realizados e, por fim, será feita apresentada uma conclusão sobre o EP.
+	Neste terceiro exercício-programa de MAC0300 - Métodos Numéricos da Álgebra Linear foi pedido que implementássemos um programa que fosse capaz de decompor uma matriz em seus valores singulares (SVD) e aplicar tal algoritmo para a compressão de imagens. Neste relatório serão apresentados: Uma explicação e análise sobre SVD e seus algoritmos (Clássico e Golub-Reinsch), testes realizados e, por fim, será feita apresentada uma conclusão sobre o EP.
 
 % Explique sucintamente o método de Decomposição em Valores Singulares;
 
@@ -112,15 +114,81 @@ e Estatística \par Universidade de São Paulo}
 	\section{Melhorias do Algoritmo de Golub-Reinsch ao Método Clássico\label{melhorias}}
 		Apesar do algoritmo clássico ser relativamente barato computacionalmente ele possui como problema o fato que valores singulares pequenos serão calculados de maneira imprecisa. Isto é uma consequência do efeito de "perda de informação através da elevação ao quadrado" que acontece quando calculamos $M^{T}M$ a partir de $A$.
 		
-		Nós podemos ter uma ideia desta perda de informação ao considerar um exemplo. Suponha que as entradas da matriz A são conhecidas com exatidão em seis casas decimais. Se A tem, digamos $\sigma_1 \approx 1$ e $\sigma_{17} \approx 10^{-3}$, então $\sigma_{17}$ é razoavelmente menor que $\sigma_1$, mas ainda assim acima da precisão de $\epsilon \approx 10^{-5}$ ou $10^{-6}$. Nós gostaríamos de calcular $\sigma_17$ com talvez duas ou três casas de precisão. As entradas de $M^{T}M$ tem também precisão de aproximadamente volta de seis casas decimais. Associada com os valores singulares $\sigma_1$ e $\sigma_{17}$, $M^{T}M$ tem autovalores $\lambda_1 = \sigma_{1}^{2} \approx 1$ e $\lambda_{17} = \sigma_{17}^{2} \approx 10^{-6}$. Note que $\lambda_{17}$ tem a mesma magnitude que os erros nas entradas de $M^{T}M$. Portanto não podemos esperar que $\lambda_{17}$ possa ser calculado de maneira precisa. \cite{watkins2004fundamentals}
+		Nós podemos ter uma ideia desta perda de informação ao considerar um exemplo. Suponha que as entradas da matriz A são conhecidas com exatidão em seis casas decimais. Se A tem, digamos $\sigma_1 \approx 1$ e $\sigma_{17} \approx 10^{-3}$, então $\sigma_{17}$ é razoavelmente menor que $\sigma_1$, mas ainda assim acima da precisão de $\epsilon \approx 10^{-5}$ ou $10^{-6}$. Nós gostaríamos de calcular $\sigma_{17}$ com talvez duas ou três casas de precisão. As entradas de $M^{T}M$ tem também precisão de aproximadamente volta de seis casas decimais. Associada com os valores singulares $\sigma_1$ e $\sigma_{17}$, $M^{T}M$ tem autovalores $\lambda_1 = \sigma_{1}^{2} \approx 1$ e $\lambda_{17} = \sigma_{17}^{2} \approx 10^{-6}$. Note que $\lambda_{17}$ tem a mesma magnitude que os erros nas entradas de $M^{T}M$. Portanto não podemos esperar que $\lambda_{17}$ possa ser calculado de maneira precisa. \cite{watkins2004fundamentals}
 	
 	
 \chapter{Testes Realizados}
-
-\chapter{Conclusão}
-	O trabalho ajudou os alunos a entrar em contato com a área de Computação Gráfica, pouco abordada durante a os estudos habituais de um aluno de Ciência da Computação. Com uma introdução teórica suficiente e exercícios práticos de implementação relacionados ao assunto os alunos conseguiram fixar os novos conceitos tais como convolução e diferentes métodos de filtragem de imagens. O tema gera mais interesse ainda pela sua conotação visual inerente, que torna mais palatável os resultados obtidos depois dos diversos processamentos.
+	Como foi pedido no enunciado, o algoritmo implementado foi utilizado para comprimir uma imagem RGB ao alterarmos o número do posto (\emph{rank}) da decomposição obtida escolhendo apenas as $k$ primeiras colunas de $U$, linhas e colunas de $\Sigma$ e colunas de $V$. Os resultados condizem com o esperado, estando os valores singulares ordenados, os primeiros possuem um ``peso'' maior na composição da imagem final. O efeito prátio é que com uma quantidade menor de termos na série que define a matriz da imagem original a partir da SVD podemos montar uma imagem comprimida muito próxima da original.
 	
-	Novamente, a possibilidade de utilizar uma linguagem voltada pra processamentos matemáticos, tal como Octave, a escolhida para este trabalho, simplificou problemas de implementação, permitindo aos alunos focarem nos algoritmos propriamente ditos. Ainda, a carga de teoria embutida no EP2 diminuiu com relação ao EP1, algo interessante dadas as dificuldades que os alunos enfrentaram ao iniciarem seus trabalhos no EP1.
+	\begin{figure}[hb]
+		\centering
+		\includegraphics[scale=1]{imagens/balloon256.jpg}
+		\caption[Imagem original] {Imagem original ($256 \times 170$)}
+	\end{figure}
+	
+	\begin{figure}
+        \centering
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-1.jpg}
+                \caption{$k = 1$}
+        \end{subfigure}%
+        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-2.jpg}
+                \caption{$k = 2$}
+        \end{subfigure}
+
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-4.jpg}
+                \caption{$k = 4$}
+        \end{subfigure}%
+        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-8.jpg}
+                \caption{$k = 8$}
+        \end{subfigure}
+        
+                \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-16.jpg}
+                \caption{$k = 16$}
+        \end{subfigure}%
+        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-32.jpg}
+                \caption{$k = 32$}
+        \end{subfigure}
+
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-64.jpg}
+                \caption{$k = 64$}
+        \end{subfigure}%
+        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.5\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{imagens/balloon256-compressed-128.jpg}
+                \caption{$k = 128$}
+        \end{subfigure}
+
+        \caption{Resultado das compressões para diferentes valores de $k$}
+	\end{figure}
+
+	
+	
+\chapter{Conclusão}
+	Neste trabalho foram apresentados uma explicação sucinta sobre a decomposição em valores singulares (SVD). Posteriormente, foram vistos dois algoritmos distintos para obter tal decomposição e, em seguida, uma comparação foi traçada entre a eficácia de cada um dos métodos juntamente com uma análise de complexidade do algoritmo de Golub-Reinsch. Por fim, foram apresentados resultados experimentais do método de compressão de imagens apresentado no enunciado do EP.
+	
+	O trabalho inovou ao introduzir aos alunos de Ciência da Computação a uma vasta área dentro do ramo que é a compressão de dados, tão relevante frente à crescente demanda, por exemplo, de conteúdos multimídia com resolução cada vez maior. Desta vez, a fundamentação teórica não é tão complexa depois que os alunos já estão habituados a conceitos como decomposições QR de Givens, Householder, autovalores e autovetores. Porém, a carga de programação foi bem mais intensa que antes, o algoritmo de Golub-Reinsch tem muitas subrotinas que devem ser implementadas.
 	
 \nocite{*}
 \bibliographystyle{abnt-num}
