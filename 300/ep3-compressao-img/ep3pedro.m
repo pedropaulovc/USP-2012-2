@@ -33,183 +33,189 @@ function [res] = sinal(a,b)
 	endif
 endfunction
 
-function [a, w, v] = svdcmp(a)
-	[m, n] = size(a);
+function testar_svd()
+	A = rand(12,6);
+	[U,S,V] = svdcmp(A);
+	cond(A - U * S * V')
+	A = magic(10);
+	[U,S,V] = svdcmp(A);
+	cond(A - U * S * V')
+	A = rand(6,12);
+	[U,S,V] = svdcmp(A);
+	cond(A - U * S * V')
+endfunction
+
+function [A, S, V] = golub_reinsch(A)
+	[m, n] = size(A);
 	
-	rv1 = zeros(n,1);
-	w = zeros(n,1);
-	v = zeros(n);
+	tmp = zeros(n,1);
+	S = zeros(n,1);
+	V = zeros(n);
 	
-	g = scale = anorm = 0.0;
-	% Householder reduction to bidiagonal form
+	g = escala = anorm = 0.0;
+	% Gravando na matriz 'S' a transformação da matriz 'A' à forma bidiagonal 
+	% através de reflexões de Householder
 	for i = 1:n
 		l = i + 1;
-		rv1(i) = scale * g;
-		g = s = scale = 0.0;
+		tmp(i) = escala * g;
+		g = s = escala = 0.0;
 		if (i <= m)
-			for k = i:m	scale += abs(a(k,i)); endfor
-			if scale
-				for k = i:m
-					a(k,i) /= scale;
-					s += a(k,i) * a(k,i);
-				endfor
-				
-				f = a(i,i);
+			escala = norm(A(i:m, i), 1);
+			if escala
+				A(i:m,i) /= escala;
+				s = A(i:m,i)' * A(i:m,i);
+			
+				f = A(i,i);
 				g = -sinal(sqrt(s),f);
 				h = f * g - s;
-				a(i,i) = f - g;
+				A(i,i) = f - g;
 				for j = l:n
-					s = 0.0;
-					for k = i:m s += a(k,i) * a(k,j); endfor
+					s = A(i:m,i)' * A(i:m,j);
 					f = s/h;
-					for k = i:m a(k,j) += f * a(k,i); endfor
+					A(i:m,j) += f * A(i:m,i);
 				endfor
-				for k = i:m a(k,i) *= scale; endfor
+				A(i:m,i) *= escala;
 			endif
 		endif
 		
-		w(i) = scale * g;
-		g = s = scale = 0.0;
+		S(i) = escala * g;
+		g = s = escala = 0.0;
 		
 		if i <= m && i != n
-			for k = l:n scale += abs(a(i,k)); endfor
-			if scale
-				for k = l:n
-					a(i,k) /= scale;
-					s += a(i,k) * a(i,k);
-				endfor
-				f = a(i,l);
+			escala = norm(A(i,l:n), 1);
+			if escala
+				A(i,l:n) /= escala;
+				s = A(i,l:n) * A(i, l:n)';
+				f = A(i,l);
 				g = -sinal(sqrt(s),f);
 				h = f * g - s;
-				a(i,l) = f - g;
-				for k = l:n rv1(k) = a(i,k)/h; endfor
+				A(i,l) = f - g;
+				tmp(l:n) = A(i,l:n)/h;
+
 				for j = l:m
-					s = 0.0;
-					for k = l:n s += a(j,k) * a(i,k); endfor
-					for k = l:n a(j,k) += s * rv1(k); endfor
+					s = A(j,l:n) * A(i,l:n)';
+					A(j,l:n) += s * tmp(l:n)';
 				endfor
-				for k = l:n a(i,k) *= scale; endfor
+				A(i,l:n) *= escala;
 			endif
 		endif
-		anorm = max(anorm, (abs(w(i)) + abs(rv1(i))));
+		anorm = max(anorm, (abs(S(i)) + abs(tmp(i))));
 	endfor
 	
 	
-	% Accumulation of right-hand transformations.
+	% Montando a matriz 'V' com as transformações de Householder utilizadas à direita
 	for i = n:-1:1
 		if i < n
 			if g
-				for j = l:n %Double division to avoid possible underflow.
-					v(j,i) = (a(i,j)/a(i,l))/g;
-				endfor
+				V(l:n,i) = (A(i,l:n)/A(i,l))/g';
 				for j = l:n
-					s = 0.0;
-					for k = l:n s += a(i,k) * v(k,j); endfor
-					for k = l:n v(k,j) += s * v(k,i); endfor
+					s = A(i,l:n) * V(l:n,j);
+					V(l:n,j) += s * V(l:n,i);
 				endfor
 			endif
-			for j = l:n v(i,j) = v(j,i) = 0.0; endfor
+			V(i,l:n) = 0.0;
+			V(l:n,i) = 0.0;
 		endif
-		v(i,i) = 1.0;
-		g = rv1(i);
+		V(i,i) = 1.0;
+		g = tmp(i);
 		l = i;
 	endfor
-	% Accumulation of left-hand transformations.
+	
+	
+	% Atualizando a matriz 'A' (Que representa U na decomposição A = USV')
+	% com as transformações de Householder utilizadas à esquerda
 	for i = min(m,n):-1:1
 		l = i + 1;
-		g = w(i);
-		for j = l:n a(i,j) = 0.0; endfor
+		g = S(i);
+		A(i,l:n) = 0.0;
 		if g
 			g = 1.0/g;
 			for j = l:n
-				s = 0.0;
-				for k = l:m s += a(k,i) * a(k,j); endfor
-				f = (s/a(i,i)) * g;
-				for k = i:m a(k,j) += f * a(k,i); endfor
+				s = A(l:m,i)' * A(l:m,j);
+				f = (s/A(i,i)) * g;
+				A(i:m,j) += f * A(i:m,i);
 			endfor
-			for j = i:m a(j,i) *= g; endfor
+			A(i:m,i) *= g;
 		else
-			for j = i:m a(j,i) = 0.0; endfor
+			A(i:m,i) = 0.0;
 		endif
-		a(i,i) += 1;
+		A(i,i) += 1;
 	endfor
-	% Diagonalization of the bidiagonal form.
+	
+	% Transformando 'S' de bidiagonal para diagonal através de rotações de Givens
 	for k = n:-1:1
 		for its = 1:30
 			flag = 1;
-			% Test for splitting.
 			for l = k:-1:1
-				nm = l - 1; % Note that rv1(1) is always zero.
-				if abs(rv1(l)) + anorm == anorm
+				nm = l - 1;
+				if abs(tmp(l)) + anorm == anorm
 					flag = 0;
 					break;
 				endif
-				if abs(w(nm)) + anorm == anorm break; endif
+				if abs(S(nm)) + anorm == anorm break; endif
 			endfor
 			if flag
-				c = 0.0; % Cancellation of rv1(l), if l > 1.
+				c = 0.0;
 				s = 1.0;
 				for i = l:k
-					f = s * rv1(i);
-					rv1(i) = c * rv1(i);
+					f = s * tmp(i);
+					tmp(i) = c * tmp(i);
 					if abs(f) + anorm == anorm break; endif
-					g = w(i);
+					g = S(i);
 					h = hypot(f,g);
-					w(i) = h;
+					S(i) = h;
 					h = 1.0/h;
 					c = g * h;
 					s = -f * h;
-					for j = 1:m
-						y = a(j,nm);
-						z = a(j,i);
-						a(j,nm) = y * c + z * s;
-						a(j,i) = z * c - y * s;
-					endfor
+					
+					y = A(1:m,nm);
+					z = A(1:m,i);
+					A(1:m,nm) = y * c + z * s;
+					A(1:m,i) = z * c - y * s;
 				endfor
 			endif
-			z = w(k);
-			% Convergence.
+			z = S(k);
+			% Houve convergência.
 			if l == k
-				% Singular value is made nonnegative.
+				% Transformando valores singulares em não-negativos
 				if z < 0.0
-					w(k) = -z;
-					for j = 1:n v(j,k) = -v(j,k); endfor
+					S(k) = -z;
+					V(1:n,k) *= -1;
 				endif
 				break;
 			endif
-			if its == 30 printf("no convergence in 30 svdcmp iterations"); endif
-			x = w(l); % Shift from bottom 2-by-2 minor.
+			if its == 30 printf("Não houve convergência após 30 iterações da SVD\n"); endif
+			x = S(l);
 			nm = k - 1;
-			y = w(nm);
-			g = rv1(nm);
-			h = rv1(k);
+			y = S(nm);
+			g = tmp(nm);
+			h = tmp(k);
 			f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
 			g = hypot(f,1.0);
 			f=((x-z)*(x+z)+h*((y/(f+sinal(g,f)))-h))/x;
 			c = s = 1.0;
-			% Next QR transformation:
+			% Aplicando as transformações de Givens:
 			for j = l:nm
 				i = j + 1;
-				g = rv1(i);
-				y = w(i);
+				g = tmp(i);
+				y = S(i);
 				h = s * g;
 				g = c * g;
 				z = hypot(f, h);
-				rv1(j) = z;
+				tmp(j) = z;
 				c = f / z;
 				s = h / z;
 				f = x * c + g * s;
 				g = g * c - x * s;
 				h = y * s;
 				y *= c;
-				for jj = 1:n
-					x = v(jj,j);
-					z = v(jj,i);
-					v(jj,j) = x * c + z * s;
-					v(jj,i) = z * c - x * s;
-				endfor
+				
+				x = V(1:n,j);
+				z = V(1:n,i);
+				V(1:n,j) = x * c + z * s;
+				V(1:n,i) = z * c - x * s;
 				z = hypot(f,h);
-				w(j) = z; % Rotation can be arbitrary if z = 0.
+				S(j) = z;
 				if z
 					z = 1.0 / z;
 					c = f * z;
@@ -217,24 +223,22 @@ function [a, w, v] = svdcmp(a)
 				endif
 				f = c * g + s * y;
 				x = c * y - s * g;
-				for jj = 1:m
-					y=a(jj,j);
-					z=a(jj,i);
-					a(jj,j) = y * c + z * s;
-					a(jj,i) = z * c - y * s;
-				endfor
+
+				y=A(1:m,j);
+				z=A(1:m,i);
+				A(1:m,j) = y * c + z * s;
+				A(1:m,i) = z * c - y * s;
 			endfor
-			rv1(l) = 0.0;
-			rv1(k) = f;
-			w(k) = x;
+			tmp(l) = 0.0;
+			tmp(k) = f;
+			S(k) = x;
 		endfor
 	endfor
 	
-	[w, perm] = sort(w, 'descend');
-	w = diag(w);
-	a = a(:, perm);
-	v = v(:, perm);
-	
+	[S, perm] = sort(S, 'descend');
+	S = diag(S);
+	A = A(:, perm);
+	V = V(:, perm);
 endfunction
 
 if(nargin < 3)
