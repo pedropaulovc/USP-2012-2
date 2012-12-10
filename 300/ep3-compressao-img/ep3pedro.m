@@ -7,6 +7,24 @@
 
 1;
 
+function [comp] = comprimir(img, k)
+	[m, n, d] = size(img);
+	img = double(img);
+	
+	if k > min(m, n)
+		k = min(m, n)
+		printf ("k invalido (Maior que menor das dimensões). Considerando k = %d\n", min(m,n))
+	endif
+
+	for i = 1:d
+		[U,S,V] = svdcmp(img(:,:,i));
+		l = min(k, rows(S));
+		comp(:,:,i) = U(:,1:l) * S(1:l,1:l) * V(:,1:l)';
+	endfor
+	
+	comp = uint8(comp);
+endfunction
+
 function [res] = sinal(a,b)
 	if b >= 0.0
 		res = abs(a);
@@ -75,6 +93,8 @@ function [a, w, v] = svdcmp(a)
 		endif
 		anorm = max(anorm, (abs(w(i)) + abs(rv1(i))));
 	endfor
+	
+	
 	% Accumulation of right-hand transformations.
 	for i = n:-1:1
 		if i < n
@@ -208,7 +228,13 @@ function [a, w, v] = svdcmp(a)
 			rv1(k) = f;
 			w(k) = x;
 		endfor
-	endfor	
+	endfor
+	
+	[w, perm] = sort(w, 'descend');
+	w = diag(w);
+	a = a(:, perm);
+	v = v(:, perm);
+	
 endfunction
 
 if(nargin < 3)
