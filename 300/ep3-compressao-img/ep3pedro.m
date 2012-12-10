@@ -17,7 +17,7 @@ function [comp] = comprimir(img, k)
 	endif
 
 	for i = 1:d
-		[U,S,V] = svdcmp(img(:,:,i));
+		[U,S,V] = golub_reinsch(img(:,:,i));
 		l = min(k, rows(S));
 		comp(:,:,i) = U(:,1:l) * S(1:l,1:l) * V(:,1:l)';
 	endfor
