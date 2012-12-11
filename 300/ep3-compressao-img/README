@@ -1,0 +1,46 @@
+# MAC0300 - 2012 - MÉTODOS NUMÉRICOS DA ÁLGEBRA LINEAR
+# EP3: Compressão de imagens usando SVD
+
+## Autor
+Pedro Paulo Vezzá Campos - 7538743
+
+## Execução
+Para executar o programa utilize o seguinte comando:
+
+octave -qf ep3pedro.m -k <rank> imagem.bmp
+
+ou
+
+./ep2pedro.m -k <rank> imagem.bmp
+
+Onde:
+
+<rank> é o valor do rank escolhido para a imagem comprimida (Ex. 128).
+
+Será gerado um arquivo imagem-compressed.bmp no diretório de execução do programa
+contendo o resultado da compressão da imagem utilizando o algoritmo SVD implementado.
+
+## Aviso
+Como explicado no relatório, o algoritmo tem complexidade O(mn^2). Ainda, 
+a constante da complexidade é afetada pela pouca otimização que código octave
+possui. Dessa forma, executar o programa para uma imagem pode levar vários minutos
+para terminar. Exemplo executado em um Core2Duo:
+
+time ./ep3pedro.m -k 128 testes/balloon256.bmp 
+
+
+real    2m23.386s
+user    1m45.955s
+sys     0m34.002s
+
+
+## Testes
+O programa teve seu funcionamento correto verificado com imagens exemplo que
+encontram-se no diretório **testes**. Os resultados esperados para diferentes
+valores de rank encontram-se no diretório **resultados**.
+
+## Relatório
+Um relatório comentando a implementação e conceitos utilizados no EP
+encontra-se no arquivo ep3pedro-relatorio.pdf
+
+

@@ -54,7 +54,7 @@ endfunction
 #de três matrizes, A = U * S * V' com as restrições:
 # - A é m x n
 # - U é m x min(m,n) e possui colunas ortogonais
-# - S é min(m,n) x min(m,n) e é uma matriz diagonal contendo da diagonal principal os valores singulares
+# - S é min(m,n) x min(m,n) e é uma matriz diagonal contendo na diagonal principal os valores singulares
 # - V é n x min(m,n) e possui colunas ortogonais
 #Parâmetro:
 # - A: A matriz a ser decomposta
@@ -70,8 +70,8 @@ function [A, S, V] = golub_reinsch(A)
 	V = zeros(n);
 	
 	g = escala = anorm = 0.0;
-	% Gravando na matriz 'S' a transformação da matriz 'A' à forma bidiagonal 
-	% através de reflexões de Householder
+	% Algoritmo de Golub-Kahan:
+	% Transformando a matriz 'A' à forma bidiagonal através de reflexões de Householder
 	for i = 1:n
 		l = i + 1;
 		tmp(i) = escala * g;
@@ -159,7 +159,7 @@ function [A, S, V] = golub_reinsch(A)
 		A(i,i) += 1;
 	endfor
 	
-	% Transformando 'S' de bidiagonal para diagonal através de rotações de Givens
+	% Transformando 'A' de bidiagonal para diagonal através de rotações de Givens
 	for k = n:-1:1
 		for its = 1:30
 			flag = 1;
@@ -211,7 +211,7 @@ function [A, S, V] = golub_reinsch(A)
 			g = hypot(f,1.0);
 			f=((x-z)*(x+z)+h*((y/(f+g*sign(f)))-h))/x;	
 			c = s = 1.0;
-			% Aplicando as transformações de Givens:
+			% Aplicando uma transformação de Givens:
 			for j = l:nm
 				i = j + 1;
 				g = tmp(i);

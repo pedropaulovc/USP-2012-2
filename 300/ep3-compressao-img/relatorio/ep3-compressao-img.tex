@@ -112,7 +112,7 @@ e Estatística \par Universidade de São Paulo}
 			
 
 	\section{Melhorias do Algoritmo de Golub-Reinsch ao Método Clássico\label{melhorias}}
-		Apesar do algoritmo clássico ser relativamente barato computacionalmente ele possui como problema o fato que valores singulares pequenos serão calculados de maneira imprecisa. Isto é uma consequência do efeito de "perda de informação através da elevação ao quadrado" que acontece quando calculamos $M^{T}M$ a partir de $A$.
+		Apesar do algoritmo clássico ser relativamente barato computacionalmente ele possui como problema o fato que valores singulares pequenos serão calculados de maneira imprecisa. Isto é uma consequência do efeito de ``perda de informação através da elevação ao quadrado'' que acontece quando calculamos $M^{T}M$ a partir de $A$.
 		
 		Nós podemos ter uma ideia desta perda de informação ao considerar um exemplo. Suponha que as entradas da matriz A são conhecidas com exatidão em seis casas decimais. Se A tem, digamos $\sigma_1 \approx 1$ e $\sigma_{17} \approx 10^{-3}$, então $\sigma_{17}$ é razoavelmente menor que $\sigma_1$, mas ainda assim acima da precisão de $\epsilon \approx 10^{-5}$ ou $10^{-6}$. Nós gostaríamos de calcular $\sigma_{17}$ com talvez duas ou três casas de precisão. As entradas de $M^{T}M$ tem também precisão de aproximadamente volta de seis casas decimais. Associada com os valores singulares $\sigma_1$ e $\sigma_{17}$, $M^{T}M$ tem autovalores $\lambda_1 = \sigma_{1}^{2} \approx 1$ e $\lambda_{17} = \sigma_{17}^{2} \approx 10^{-6}$. Note que $\lambda_{17}$ tem a mesma magnitude que os erros nas entradas de $M^{T}M$. Portanto não podemos esperar que $\lambda_{17}$ possa ser calculado de maneira precisa. \cite{watkins2004fundamentals}
 	
