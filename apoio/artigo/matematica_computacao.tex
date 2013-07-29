@@ -1,0 +1,294 @@
+% THIS IS SIGPROC-SP.TEX - VERSION 3.1
+% WORKS WITH V3.2SP OF ACM_PROC_ARTICLE-SP.CLS
+% APRIL 2009
+%
+% It is an example file showing how to use the 'acm_proc_article-sp.cls' V3.2SP
+% LaTeX2e document class file for Conference Proceedings submissions.
+% ----------------------------------------------------------------------------------------------------------------
+% This .tex file (and associated .cls V3.2SP) *DOES NOT* produce:
+%       1) The Permission Statement
+%       2) The Conference (location) Info information
+%       3) The Copyright Line with ACM data
+%       4) Page numbering
+% ---------------------------------------------------------------------------------------------------------------
+% It is an example which *does* use the .bib file (from which the .bbl file
+% is produced).
+% REMEMBER HOWEVER: After having produced the .bbl file,
+% and prior to final submission,
+% you need to 'insert'  your .bbl file into your source .tex file so as to provide
+% ONE 'self-contained' source file.
+%
+% Questions regarding SIGS should be sent to
+% Adrienne Griscti ---> griscti@acm.org
+%
+% Questions/suggestions regarding the guidelines, .tex and .cls files, etc. to
+% Gerald Murray ---> murray@hq.acm.org
+%
+% For tracking purposes - this is V3.1SP - APRIL 2009
+\documentclass{acm_proc_article-sp}
+
+\usepackage{auto-pst-pdf}
+\usepackage{graphicx}
+\usepackage{epstopdf} 
+\usepackage[brazilian]{babel}
+\usepackage{array}
+\usepackage{pgfplots}
+
+\hyphenation{In-gres-san-tes}
+\newcolumntype{C}{>{\centering\arraybackslash}m{0.28\linewidth}}
+
+\begin{document}
+
+\title{Sobre a Importância da Matemática no Ensino de Computação}
+%\title{A Sample {\ttlit ACM} SIG Proceedings Paper in LaTeX
+%Format\titlenote{(Does NOT produce the permission block, copyright information nor page numbering). For use with ACM\_PROC\_ARTICLE-SP.CLS. Supported by ACM.}}
+%\subtitle{[Extended Abstract]
+%\titlenote{A full version of this paper is available as
+%\textit{Author's Guide to Preparing ACM SIG Proceedings Using
+%\LaTeX$2_\epsilon$\ and BibTeX} at
+%\texttt{www.acm.org/eaddress.htm}}}
+%
+% You need the command \numberofauthors to handle the 'placement
+% and alignment' of the authors beneath the title.
+%
+% For aesthetic reasons, we recommend 'three authors at a time'
+% i.e. three 'name/affiliation blocks' be placed beneath the title.
+%
+% NOTE: You are NOT restricted in how many 'rows' of
+% "name/affiliations" may appear. We just ask that you restrict
+% the number of 'columns' to three.
+%
+% Because of the available 'opening page real-estate'
+% we ask you to refrain from putting more than six authors
+% (two rows with three columns) beneath the article title.
+% More than six makes the first-page appear very cluttered indeed.
+%
+% Use the \alignauthor commands to handle the names
+% and affiliations for an 'aesthetic maximum' of six authors.
+% Add names, affiliations, addresses for
+% the seventh etc. author(s) as the argument for the
+% \additionalauthors command.
+% These 'additional authors' will be output/set for you
+% without further effort on your part as the last section in
+% the body of your article BEFORE References or any Appendices.
+
+\numberofauthors{3} %  in this sample file, there are a *total*
+% of EIGHT authors. SIX appear on the 'first-page' (for formatting
+% reasons) and the remaining two appear in the \additionalauthors section.
+%
+\author{
+% You can go ahead and credit any number of authors here,
+% e.g. one 'row of three' or two rows (consisting of one row of three
+% and a second row of one, two or three).
+%
+% The command \alignauthor (no curly braces needed) should
+% precede each author name, affiliation/snail-mail address and
+% e-mail address. Additionally, tag each line of
+% affiliation/address with \affaddr, and tag the
+% e-mail address with \email.
+%
+% 1st. author
+\alignauthor
+Pedro Paulo V. Campos\\
+       \affaddr{Instituto de Matemática e Estatística - Universidade de São Paulo}\\
+       \affaddr{Rua do Matão, 1010}\\
+       \affaddr{São Paulo, Brasil}\\
+       \email{pedrovc@ime.usp.br}
+% 2nd. author
+\alignauthor
+Jackson José Souza\\
+       \affaddr{Instituto de Matemática e Estatística - Universidade de São Paulo}\\
+       \affaddr{Rua do Matão, 1010}\\
+       \affaddr{São Paulo, Brasil}\\
+       \email{jackson@ime.usp.br}
+% 3rd. author
+\alignauthor
+Giuliano Salcas Olguin\\
+       \affaddr{Escola Politécnica - Universidade de São Paulo}\\
+       \affaddr{Av. Professor Luciano Gualberto, 380}\\
+       \affaddr{São Paulo - SP, Brasil.}\\
+       \email{giuliano.olguin@gmail.com}
+%\and  % use '\and' if you need 'another row' of author names
+}
+% There's nothing stopping you putting the seventh, eighth, etc.
+% author on the opening page (as the 'third row') but we ask,
+% for aesthetic reasons that you place these 'additional authors'
+% in the \additional authors block, viz.
+%\additionalauthors{Additional authors: John Smith (The Th{\o}rv{\"a}ld Group,
+%email: {\texttt{jsmith@affiliation.org}}) and Julius P.~Kumquat
+%(The Kumquat Consortium, email: {\texttt{jpkumquat@consortium.net}}).}
+\date{\today}
+% Just remember to make sure that the TOTAL number of authors
+% is the number that will appear on the first page PLUS the
+% number that will appear in the \additionalauthors section.
+
+\maketitle
+\begin{abstract}
+One of the questionings raised by teachers and students when building a Computer Science undergraduate curriculum is about the distribution of basic and practical or professional courses. Particularly, the amount of Mathematics that students should be studied by undergraduate students is the topic that is analyzed in this paper. Previous works are emphatic when defending the importance of the adequate study of foundations disciplines, Mathematics included in this context, with the goal of giving the students a solid formation, toward the future.
+
+This work analyses in quantitative terms the lecture hour load dedicated to Mathematics disciplines on 2012 curricula of 11 Brazilian CS undergraduate programs, the best ranked in the Brazilian Education Ministry evaluation test (ENADE/MEC): IME/USP, PUC-RJ, UFBA, UFCG, UFMG, UFPE, UFRGS, UFRJ, UFSC, UNICAMP, ICMC/USP. To allow the comparison, it was established a common definition of what was considered a lecture hour of Mathematics. For a reference point, such programs were compared with two reference curricula in the area: The Brazilian Computer Society (SBC) one and the ACM one.
+
+It was possible to conclude by the analysis of data that the Mathematics study is receiving little attention as more than half of the studied programs didn't achieve the minimum amount of Mathematics study hours necessary during undergraduate studies according to ACM's reference curriculum.
+\end{abstract}
+
+% A category with the (minimum) three required fields
+\category{K.3.2}{Computers and Education}{Computer and Information Science Education}[Computer science education]
+
+\terms{Human Factors}
+
+\keywords{Matemática, currículo de referência, fundamentos} % NOT required for Proceedings
+
+\section{Introdução}
+	O recente crescimento de diferentes cursos de Ensino Superior resultaram em um agravamento da crise de identidade da Universidade. Desde sua criação nos idos do século XIII \cite{oliveira:origem_universidades} , sua função variava com o contexto político da sociedade local, apresentando basicamente valores relacionados a questões nacionais. Ainda assim, persistia a existência de duas tendencias ortogonais, a de que a missão da universidade deveria ser a de resolver as questões atuais da sociedade, e outra onde a tarefa principal é a de ser um farol, vislumbrando o futuro. A dificuldade atual é que temos tanto cursos que visam empregabilidade imediata quanto formações focadas em profissionais que saibam lidar com problemas que ainda não existem. Mesclar essas duas competências parece ser uma tarefa impossível. 
+
+	Para Renato Janine \cite{ribeiro:universidade_vida_atual}, existem certos conhecimentos que são voláteis, normalmente os técnicos, que devem ser ensinados pelas empresas. No caso, ``é melhor que em seus      de formação o jovem lide com o que terá permanência e, com isso, lhe dará uma base sólida, do que com detalhes em constante mudança.''
+
+	A universidade deve fornecer as bases necessárias para que depois de formada a pessoa consiga se adequar aos diversos padrões utilizados pelas empresas no exercício da profissão cuja qualificação foi obtida na universidade. Por isso, a universidade não deve se preocupar em ensinar diferentes tipos de procedimentos estabelecidos no mercado de trabalho ou ensinar técnicas para lidar apenas com alguns problemas particulares da profissão. Ela deve sim preparar os alunos para lidar com quaisquer problemas ou tipos de procedimentos em qualquer tempo, seja presente ou futuro. 
+
+	Afinal, os procedimentos podem variar não apenas de empresa para empresa como também mudar ao longo do tempo. Assim, o profissional formado não estaria preparado para o futuro e só conseguiria se adaptar a empresas que soubessem lidar com alguns determinados problemas e dominariam apenas algumas técnicas específicas. Pode-se notar facilmente esse fato através da rápida evolução dos softwares, que imprimem um constante aprendizado de sua manipulação, o que gera em alguns casos um descarte dos conhecimentos previamente vistos.  
+
+	Portanto, fica evidente que a teoria e os fundamentos são essenciais para este tipo de formação e não podem ser \emph{substituídos} por conhecimentos apenas técnicos e ou práticos. Afinal, são os fundamentos que dão a capacidade de se pegar um dado problema e utilizar uma abordagem ou raciocínio para resolvê-lo. Essa questão tem maior impacto nos cursos com caráter tecnológico, como as engenharias, estes ainda sendo regidos por órgãos que controlam o exercício da profissão. 
+
+	Um dos pontos em comum, localizado em praticamente todos os currículos dos cursos que tratam de tecnologia são os conteúdos de matemática. Esses, que na maioria dos casos  apresentam apenas de teor básico, encaixam-se justamente na definição que Renato Janine apresentou para as tarefas dentro da Universidade. Segundo Anthony Ralphson, a matemática desenvolve a mente e ``melhora as habilidades de aprendizado dos alunos''.
+
+	Por outro lado, tanto Ralphson quanto Kelemen et al, são enfáticos ao notar que a forma como Matemática é oferecida nos cursos de graduação nas universidades americanas, mais especificamente o Bacharelado em Ciência da Computação (BCC), influi no aprendizado dos alunos. 
+
+	Um importante fato detectado por diversos dos trabalhos analisados ([Ralphson], [Tucker]) é que uma análise do currículo de referência fornecido pela \emph{Association for Computing Machinery} (ACM) indica que o papel da Matemática vem decaindo gradativamente desde pelo menos a década de 1960, apesar de com menor velocidade nos      atuais.
+
+	Esse cenário é tido como ruim, pois para estudantes de Ciência da Computação/Engenharia de Software, em particular, matemática é importante porque o raciocínio logico inerente a todo pensamento matemático é muito similar ao pensamento lógico necessário no desenvolvimento de software \cite{ralston:do_need_mathematics}. Na elaboração de projetos e implementação de softwares o formado precisa desenvolver maneiras efetivas de solucionar problemas computacionais e a quantidade de matemática utilizada no cotidiano de um programador geralmente aumenta quando as estruturas construídas utilizam uma linguagem mais formal. \cite{ralston:do_need_mathematics}
+
+	Segundo \cite{kelemen:has_become_math_phobic}, ``estudantes de Ciência da Computação devem ser capazes de modelar problemas do `mundo real' precisamente utilizando matemática e representar situações utilizando estruturas como vetores, listas ligadas, árvores, grafos finitos e matrizes. Eles devem ser capazes de desenhar e analisar algoritmos que transformam tais estruturas [\ldots], compreender a natureza de um modelo matemático e relacionar modelos matemáticos a domínios de problemas reais [\ldots]. Estratégias de solução de problemas tais como divisão-e-conquista e backtracking são também essenciais''.
+
+\section{Metodologia}
+	O presente trabalho faz um estudo comparativo dos diferentes cursos de Ciência da Computação através de uma comparação quantitativa no número de créditos-aula que são ministrados na área de Matemática tanto em valores absolutos quanto em valores relativos ao total de créditos aula da graduação. O objetivo principal é identificar se os cursos selecionados tem mais ou menos ênfase em Matemática em comparação com a ACM. 
+	
+	É importante ressaltar que uma avaliação quantitativa da carga horária permite uma classificação objetiva dos cursos analisados, por outro lado, pode ser pouco efetiva na análise das diferentes facetas que a Matemática se apresenta em cursos de graduação em Computação, como por exemplo a ênfase de um determinado curso na área de Matemática Contínua (Cálculo) ou Discreta (Álgebra).
+
+% Preamble: \pgfplotsset{width=7cm,compat=1.3}
+\begin{tikzpicture}
+\begin{axis}[
+	x tick label style={
+		/pgf/number format/1000 sep=},
+	ylabel=Population,
+	enlargelimits=0.15,
+	legend style={at={(0.5,-0.15)},
+		anchor=north,legend columns=-1},
+	ybar,
+	bar width=7pt,
+]
+\addplot
+	coordinates {(1930,50e6) (1940,33e6)
+		(1950,40e6) (1960,50e6) (1970,70e6)};
+\addplot
+	coordinates {(1930,38e6) (1940,42e6)
+		(1950,43e6) (1960,45e6) (1970,65e6)};
+\addplot
+	coordinates {(1930,15e6) (1940,12e6)
+		(1950,13e6) (1960,25e6) (1970,35e6)};
+\addplot[red,sharp plot,]
+	coordinates {(1910,4.3e7) (1990,4.3e7)}
+	node[above] at (axis cs:1950,4.3e7) {Houses};
+\legend{Far,Near,Here,Annot}
+\end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[xbar stacked]
+\addplot
+	coordinates {(1,0) (2,1) (2,2) (3,3)};
+\addplot
+	coordinates {(1,0) (2,1) (2,2) (3,3)};
+\addplot
+	coordinates {(1,0) (2,1) (2,2) (3,3)};
+\end{axis}
+\end{tikzpicture}
+
+
+	São considerados cursos de Matemática disciplinas que abordam as áreas do Cálculo, Álgebra Linear, Geometria, Vetores e Álgebra. Tais disciplinas são ministradas habitualmente pelos departamentos de Matemática das faculdades. A dificuldade é que em alguns casos os nomes das disciplinas, ou as próprias ementas, não representam o que de fato é ensinado. Todo o material curricular foi lido e classificações foram criadas para selecionar o que fato pode ser identificado como Matemática. 
+
+	Os onze cursos de graduação em Ciência da Computação estudados foram escolhidos tendo como critério o fato de serem cursos de relevância nacional no Brasil na área de Computação, com resultados expressivos em rankings de avaliação de curso como o NOME COMPLETO ENADE em 2008 (por referencia)
+
+	Um efeito colateral dessa escolha é que a maior parte dos programas estudados é de universidades públicas, o que deve ser levado em conta na análise dos dados uma vez que estes podem possuir ênfases diferenciadas na quantidade e abordagem de disciplinas de fundamentos (Matemática principalmente) em comparação a universidades particulares.
+
+\section{Dados}
+A tabela 1 apresenta o panorama geral das 11 universidades indicando seu tamanho e características do curso.
+
+\begin{table*}
+	\centering
+	\caption{Some Typical Commands}
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Universidade  & Total créditos & Total horas & Período          & Graduação (anos) & Alunos por ano \\ \hline
+        IME/USP[..]   & 199            & 2985        & Diurno           & 4               & 50                   \\ 
+        PUC-RJ [..]   & 214            & 3212        & Diurno           & 4               & 50                   \\ 
+        UFBA [..]     & 197            & 3347        & Diurno e Noturno & 4               & 90                   \\ 
+        UFCG [..]     & 208            & 3120        & Diurno           & 4               & 90                   \\ 
+        UFMG [..]     & 175            & 2625        & Diurno           & 4               & 80                   \\ 
+        UFPE [..]     & 233            & 3495        & Diurno           & 4,5             & 100                  \\ 
+        UFRGS [..]    & 196            & 3240        & Diurno           & 4,5             & 100                  \\ 
+        UFRJ [..]     & 195            & 3075        & Diurno           & 4,5             & 50                   \\ 
+        UFSC [..]     & 196            & 3528        & Diurno           & 4               & 100                  \\ 
+        UNICAMP [..]  & 200            & 3000        & Noturno          & 5               & 50                   \\ 
+        ICMC/USP [..] & 293            & 4395        & Diurno           & 5               & 100                  \\ 
+        SBC [..]      & 160            & 2400        & N/A              & 4               & N/A                  \\ 
+        SBC [..]      & 200            & 3000        & N/A              & 5               & N/A                  \\ 
+        ACM [..]      & 280            & 4200        & N/A              & 4               & N/A                  \\
+        \hline
+    \end{tabular}
+\end{table*}
+
+	Nota-se que a maioria dos cursos são diurnos (Integrais), com duração entre 4 e 4,5 anos. É importante notar que a relação entre um crédito e as respectivas horas de aula varia entre universidades. Há cursos como os da da USP e o currículo de referência da ACM que consideram que um crédito equivale a 15 horas de aula, já o da UFSC, por exemplo, adota a relação 1 crédito = 18 horas. O currículo referência da SBC não indica qual é a relação adotada e assim os autores optaram por considerar o valor de 15 horas para fins de comparação.
+
+	Na composição dos totais apresentados na tabela acima foram descritas as quantidades mínimas necessárias para a integralização curricular completa, abarcando créditos de disciplinas optativas e/ou estágios obrigatórios quando existem. 
+
+	Analisando a coluna de total de horas podemos perceber que há uma grande variabilidade na quantidade exigida pelos currículos das diferentes universidades. Em média são exigidas 3177 h ($\sigma = 554 h $) para cursos de 4 anos, 3270 horas ($\sigma = 211 h$) para cursos de 4,5 anos e 3465 h ($\sigma = **** h$) para cursos de 5 anos.
+
+	A tabela 2 trata especificamente dos conteúdos de Matemática. Aqui percebe-se uma grande diversidade na carga horária reservada a Matemática nos currículos dos cursos de Computação pelo Brasil. Aqui, as universidades possuem em média 15,6\% ($\sigma = 4,77 \%$) de disciplinas exclusivamente de desta área.
+
+	Ainda, notamos que ao compararmos cada universidade com o currículo de referência da ACM (Que afirma ser o mínimo necessário para a cobertura do tópico) podemos verificar que 5 cursos possuem carga de Matemática maior ou igual que o recomendado e 6 cursos possuem menos. Isso corrobora a visão dos autores citados anteriormente que afirmam que Matemática é uma disciplina em decadência nos cursos de Computação.
+
+\begin{table}
+	\centering
+	\caption{Some Typical Commands}
+    \begin{tabular}{|C|C|C|}
+        \hline
+        Universidade & Créditos/horas Totais em Matemática & Créditos/horas Percentuais em Matemática \\ \hline
+        IME/USP      & 50                                  & 25,10\%                                   \\ 
+        UNICAMP      & 35                                  & 17,40\%                                   \\ 
+        UFMG         & 19                                  & 10,80\%                                   \\ 
+        UFRGS        & 24                                  & 12,00\%                                   \\ 
+        UFRJ         & 31                                  & 21,20\%                                   \\ 
+        PUC-RJ       & 22                                  & 10,20\%                                   \\ 
+        ICMC/USP     & 36                                  & 16,50\%                                   \\ 
+        UFPE         & 25                                  & 10,70\%                                   \\ 
+        UFBA         & 32                                  & 16,20\%                                   \\ 
+        UFSC         & 21                                  & 12,20\%                                   \\ 
+        UFCG         & 28                                  & 13,40\%                                   \\ 
+        SBC (4 anos) & 30                                  & 5,30\%                                    \\ 
+        ACM          & 43                                  & 15,30\%                                   \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Conclusões}
+	Neste artigo foi possível ver primeiramente como as disciplinas de Matemática são de grande importância para um futuro bacharel em Ciência da Computação. Foi visto que tal disciplina é uma base, que precisa ser sólida, para o desenvolvimento de tópicos mais avançados que se baseiam nela. Ainda, diversos educadores na área de Computação com artigos publicados em eventos de repercussão internacional compartilham desta tese.
+	
+	Por outro lado, foi constatado que esta área está sofrendo uma decadência em sua relevância, em parte pelo surgimento de diversas novas tendências no mercado de Computação que são absorvidas nos currículos dos cursos de graduação.
+	
+	Por fim, foi feita uma análise da situação atual da ênfase dada a Matemática nos currículos de 11 universidades brasileiras através de análises da carga horária absoluta e relativa. Foi constatado que mais de 50\% das universidades pesquisadas possuem uma carga menor que o recomendado pela ACM em seu currículo de referência.
+%
+% The following two commands are all you need in the
+% initial runs of your .tex file to
+% produce the bibliography for the citations in your paper.
+\bibliographystyle{abbrv}
+\bibliography{matematica_computacao}  % sigproc.bib is the name of the Bibliography in this case
+% You must have a proper ".bib" file
+%  and remember to run:
+% latex bibtex latex latex
+% to resolve all references
+%
+% ACM needs 'a single self-contained file'!
+
+\balancecolumns
+% That's all folks!
+\end{document}
